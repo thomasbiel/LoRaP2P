@@ -1,0 +1,103 @@
+# LoRaP2P Console
+
+.NET-10-Raw-LoRa-PoC für Raspberry Pi 3B+ und Adafruit RFM95W Radio Bonnet. Das Projekt portiert die grundlegende RFM9x-Registersteuerung auf `System.Device.Gpio` und schafft eine testbare Basis für einen späteren LoRaP2P-Class-A-Client.
+
+> Der aktuelle Stand ist Raw LoRa, nicht LoRaP2P. `TxDone` bestätigt nur, dass der RFM95 den Sendevorgang beendet hat.
+
+Das vollständige Produktkonzept steht in [docs/PRD.md](docs/PRD.md).
+
+## Hardware
+
+| Bonnet-Signal | Raspberry Pi |
+| --- | --- |
+| SPI | SPI0 |
+| CS | CE1 |
+| RST | BCM GPIO25 |
+| DIO0 | BCM GPIO22 |
+| DIO1 | BCM GPIO23, nicht verwendet |
+| DIO2 | BCM GPIO24, nicht verwendet |
+
+Vor dem Senden eine passende 868-MHz-Antenne anschließen. Die Standardkonfiguration ist für Deutschland/EU868 vorgesehen.
+
+## Raspberry Pi vorbereiten
+
+SPI aktivieren:
+
+```bash
+sudo raspi-config nonint do_spi 0
+sudo usermod -aG spi,gpio "$USER"
+```
+
+Danach neu anmelden oder neu starten und CE1 prüfen:
+
+```bash
+ls -l /dev/spidev0.1
+```
+
+## Bauen und testen
+
+Voraussetzung auf dem Entwicklungsrechner: .NET SDK 10.
+
+```powershell
+dotnet restore
+dotnet build LoRaP2P.sln --configuration Release
+dotnet test tests/LoRaP2P.Radio.Rfm9x.Tests/LoRaP2P.Radio.Rfm9x.Tests.csproj --configuration Release
+```
+
+Die Tests verwenden NUnit und einen Fake-Registertransport. Sie benötigen keine Funkhardware.
+
+## Für Raspberry Pi OS 64-bit veröffentlichen
+
+```powershell
+dotnet publish src/LoRaP2P.Console/LoRaP2P.Console.csproj `
+  --configuration Release `
+  --runtime linux-arm64 `
+  --self-contained true `
+  --output artifacts/linux-arm64
+```
+
+Den Inhalt von `artifacts/linux-arm64` auf den Pi übertragen und dort starten:
+
+```bash
+chmod +x LoRaP2P.Console
+./LoRaP2P.Console
+```
+
+Alternative Konfiguration:
+
+```bash
+./LoRaP2P.Console --config /etc/LoRaP2P/radio.json
+```
+
+## Befehle
+
+```text
+probe
+status
+reset
+configure frequency 868.1
+configure sf 7
+configure bandwidth 125
+configure power 14
+send text ping
+send hex DEADBEEF
+receive 10
+register read 0x42
+register dump
+quit
+```
+
+Mit einem einzelnen Bonnet lassen sich SPI, Register, Modemkonfiguration, FIFO und `TxDone` prüfen. Für einen echten Empfangstest wird ein zweiter kompatibler RFM9x-Transceiver mit identischem Funkprofil benötigt.
+
+## Projektstruktur
+
+```text
+src/LoRaP2P.Console             Interaktive Konsole und Konfiguration
+src/LoRaP2P.Radio.Rfm9x         Hardwaretransport und SX1276/RFM95-Treiber
+tests/LoRaP2P.Radio.Rfm9x.Tests Hardwarefreie NUnit-Tests
+docs/PRD.md                     Produktanforderungen und Ausbaustufen
+```
+
+## Späterer LoRaP2P-Ausbau
+
+Für echtes LoRaP2P werden zusätzlich ein LoRaP2P-1.0.4-Class-A-MAC, OTAA, kryptografischer Sitzungszustand, persistente Zähler, EU868-Kanalverwaltung und ein echter SX1302/SX1303-Multichannel-Gateway mit The Things Stack oder ChirpStack benötigt. Ein zweites RFM95 ist eine Raw-LoRa-Testgegenstelle, kein LoRaP2P-Gateway.
