@@ -1,7 +1,7 @@
 using System.Globalization;
 using CommandLine;
 
-namespace LoRaP2P.ConsoleApp.Commands;
+namespace LoRaP2P.Console.Commands;
 
 internal sealed class ConsoleCommandParser : IDisposable
 {
@@ -9,23 +9,22 @@ internal sealed class ConsoleCommandParser : IDisposable
     [
         typeof(ConfigureVerb),
         typeof(ExitVerb),
-        typeof(HelpVerb),
         typeof(ProbeVerb),
         typeof(QuitVerb),
         typeof(ReceiveVerb),
         typeof(RegisterVerb),
         typeof(ResetVerb),
         typeof(SendVerb),
-        typeof(StatusVerb),
+        typeof(StatusVerb)
     ];
-
+    
     private readonly Parser _parser;
 
     public ConsoleCommandParser(TextWriter error)
     {
-        _parser = new Parser(settings =>
+        this._parser = new Parser(settings =>
         {
-            settings.AutoHelp = false;
+            settings.AutoHelp = true;
             settings.CaseSensitive = false;
             settings.CaseInsensitiveEnumValues = true;
             settings.HelpWriter = error;
@@ -38,12 +37,12 @@ internal sealed class ConsoleCommandParser : IDisposable
         CommandContext context,
         CancellationToken cancellationToken)
     {
-        string[] arguments = CommandLineTokenizer.Tokenize(commandLine);
-        ParserResult<object> result = _parser.ParseArguments(arguments, VerbTypes);
-        return await result.MapResult(
-            verb => ((IConsoleVerb)verb).ExecuteAsync(context, cancellationToken),
+        var arguments = CommandLineTokenizer.Tokenize(commandLine);
+        var result = this._parser.ParseArguments(arguments, VerbTypes);
+        return await result.MapResult<IConsoleVerb, Task<CommandOutcome>>(
+            verb => verb.ExecuteAsync(context, cancellationToken),
             _ => Task.FromResult(CommandOutcome.Continue));
     }
 
-    public void Dispose() => _parser.Dispose();
+    public void Dispose() => this._parser.Dispose();
 }

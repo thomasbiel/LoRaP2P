@@ -7,8 +7,8 @@ public sealed class Rfm9xFrequencyTests
     {
         const double frequencyHertz = 868_100_000;
 
-        int registerValue = Rfm9xFrequency.ToRegisterValue(frequencyHertz);
-        double actualFrequencyHertz = Rfm9xFrequency.FromRegisterValue(registerValue);
+        var registerValue = Rfm9xFrequency.ToRegisterValue(frequencyHertz);
+        var actualFrequencyHertz = Rfm9xFrequency.FromRegisterValue(registerValue);
 
         Assert.That(
             Math.Abs(actualFrequencyHertz - frequencyHertz),
@@ -20,7 +20,7 @@ public sealed class Rfm9xFrequencyTests
     {
         var configuration = new RadioConfiguration();
 
-        TimeSpan timeOnAir = Rfm9xTimeOnAir.Calculate(16, configuration);
+        var timeOnAir = Rfm9xTimeOnAir.Calculate(16, configuration);
 
         Assert.That(timeOnAir.TotalMilliseconds, Is.InRange(51.4, 51.5));
     }

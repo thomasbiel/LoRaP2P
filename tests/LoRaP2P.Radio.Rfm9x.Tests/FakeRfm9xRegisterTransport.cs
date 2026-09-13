@@ -4,7 +4,7 @@ namespace LoRaP2P.Radio.Rfm9x.Tests;
 
 internal sealed class FakeRfm9xRegisterTransport : IRfm9xRegisterTransport
 {
-    private readonly object _sync = new();
+    private readonly Lock _sync = new();
     private readonly Dictionary<byte, byte> _registers = new();
     private TaskCompletionSource _dio0Signal = CreateSignal();
     private byte[] _fifoReadData = [];
@@ -38,7 +38,7 @@ internal sealed class FakeRfm9xRegisterTransport : IRfm9xRegisterTransport
                 return;
             }
 
-            for (int offset = 0; offset < destination.Length; offset++)
+            for (var offset = 0; offset < destination.Length; offset++)
             {
                 destination[offset] = _registers.GetValueOrDefault(checked((byte)(address + offset)));
             }
@@ -59,11 +59,11 @@ internal sealed class FakeRfm9xRegisterTransport : IRfm9xRegisterTransport
         {
             if (address == 0x00)
             {
-                LastFifoWrite = source.ToArray();
+                LastFifoWrite = [.. source];
                 return;
             }
 
-            for (int offset = 0; offset < source.Length; offset++)
+            for (var offset = 0; offset < source.Length; offset++)
             {
                 _registers[checked((byte)(address + offset))] = source[offset];
             }
@@ -109,7 +109,7 @@ internal sealed class FakeRfm9xRegisterTransport : IRfm9xRegisterTransport
     {
         lock (_sync)
         {
-            _fifoReadData = payload.ToArray();
+            _fifoReadData = [.. payload];
         }
     }
 
@@ -124,10 +124,7 @@ internal sealed class FakeRfm9xRegisterTransport : IRfm9xRegisterTransport
         signal.TrySetResult();
     }
 
-    public void Dispose()
-    {
-    }
+    public void Dispose() { }
 
-    private static TaskCompletionSource CreateSignal() =>
-        new(TaskCreationOptions.RunContinuationsAsynchronously);
+    private static TaskCompletionSource CreateSignal() => new(TaskCreationOptions.RunContinuationsAsynchronously);
 }

@@ -1,7 +1,7 @@
 using System.Globalization;
 using CommandLine;
 
-namespace LoRaP2P.ConsoleApp.Commands;
+namespace LoRaP2P.Console.Commands;
 
 [Verb("register", HelpText = "Read one or more radio registers.")]
 internal sealed class RegisterVerb : IConsoleVerb
@@ -15,25 +15,23 @@ internal sealed class RegisterVerb : IConsoleVerb
     [Value(2, MetaName = "count", Required = false, HelpText = "Number of registers")]
     public int? Count { get; set; }
 
-    public async Task<CommandOutcome> ExecuteAsync(
-        CommandContext context,
-        CancellationToken cancellationToken)
+    public async Task<CommandOutcome> ExecuteAsync(CommandContext context, CancellationToken cancellationToken)
     {
-        (byte startAddress, int count) = Operation.ToLowerInvariant() switch
+        var (startAddress, count) = this.Operation.ToLowerInvariant() switch
         {
-            "dump" when Address is null && Count is null => ((byte)0x01, 0x42),
-            "read" when Address is not null => (ParseByte(Address), Count ?? 1),
-            _ => throw new FormatException(
-                "Usage: register read <address> [count] or register dump"),
+            "dump" when this.Address is null && this.Count is null => ((byte)0x01, 0x42),
+            "read" when this.Address is not null => (ParseByte(this.Address), this.Count ?? 1),
+            _ => throw new FormatException("Usage: register read <address> [count] or register dump")
         };
 
-        IReadOnlyDictionary<byte, byte> registers = await context.Radio.ReadRegistersAsync(
+        var registers = await context.Radio.ReadRegistersAsync(
             startAddress,
             count,
             cancellationToken);
-        foreach ((byte address, byte value) in registers)
+        
+        foreach (var (address, value) in registers)
         {
-            context.Output.WriteLine(
+            await context.Output.WriteLineAsync(
                 $"0x{address:X2}: 0x{value:X2}  {Convert.ToString(value, 2).PadLeft(8, '0')}");
         }
 
@@ -42,8 +40,8 @@ internal sealed class RegisterVerb : IConsoleVerb
 
     private static byte ParseByte(string value)
     {
-        string normalized = value.StartsWith("0x", StringComparison.OrdinalIgnoreCase) ? value[2..] : value;
-        return byte.TryParse(normalized, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out byte result)
+        var normalized = value.StartsWith("0x", StringComparison.OrdinalIgnoreCase) ? value[2..] : value;
+        return byte.TryParse(normalized, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var result)
             ? result
             : throw new FormatException($"Invalid register address: '{value}'.");
     }

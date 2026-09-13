@@ -7,10 +7,10 @@ public static class Rfm9xTimeOnAir
         ArgumentOutOfRangeException.ThrowIfNegative(payloadLength);
         configuration.Validate();
 
-        int spreadingFactor = (int)configuration.SpreadingFactor;
+        var spreadingFactor = (int)configuration.SpreadingFactor;
         double bandwidthHertz = (int)configuration.Bandwidth;
-        double symbolDurationSeconds = Math.Pow(2, spreadingFactor) / bandwidthHertz;
-        bool lowDataRateOptimize = symbolDurationSeconds > 0.016;
+        var symbolDurationSeconds = Math.Pow(2, spreadingFactor) / bandwidthHertz;
+        var lowDataRateOptimize = symbolDurationSeconds > 0.016;
 
         double numerator = (8 * payloadLength)
             - (4 * spreadingFactor)
@@ -18,12 +18,12 @@ public static class Rfm9xTimeOnAir
             + (configuration.PayloadCrcEnabled ? 16 : 0)
             - (configuration.ImplicitHeader ? 20 : 0);
         double denominator = 4 * (spreadingFactor - (lowDataRateOptimize ? 2 : 0));
-        double payloadSymbols = 8 + Math.Max(
+        var payloadSymbols = 8 + Math.Max(
             Math.Ceiling(numerator / denominator) * (int)configuration.CodingRate,
             0);
 
-        double preambleSeconds = (configuration.PreambleSymbols + 4.25) * symbolDurationSeconds;
-        double payloadSeconds = payloadSymbols * symbolDurationSeconds;
+        var preambleSeconds = (configuration.PreambleSymbols + 4.25) * symbolDurationSeconds;
+        var payloadSeconds = payloadSymbols * symbolDurationSeconds;
         return TimeSpan.FromSeconds(preambleSeconds + payloadSeconds);
     }
 }

@@ -6,3 +6,4 @@ TestResults/
 *.user
 *.suo
 appsettings.local.json
+.idea/

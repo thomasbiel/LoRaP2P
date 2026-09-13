@@ -1,13 +1,13 @@
 using CommandLine;
 
-namespace LoRaP2P.ConsoleApp;
+namespace LoRaP2P.Console;
 
 internal sealed class StartupOptions
 {
     [Option('c', "config", Required = false, HelpText = "Path to the radio configuration file.")]
     public string? ConfigurationPath { get; set; }
 
-    public string ResolveConfigurationPath() => ConfigurationPath is null
+    public string ResolveConfigurationPath() => this.ConfigurationPath is null
         ? Path.Combine(AppContext.BaseDirectory, "appsettings.json")
-        : Path.GetFullPath(ConfigurationPath);
+        : Path.GetFullPath(this.ConfigurationPath);
 }

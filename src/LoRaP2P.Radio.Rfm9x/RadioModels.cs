@@ -7,14 +7,14 @@ public enum SpreadingFactor
     Sf9 = 9,
     Sf10 = 10,
     Sf11 = 11,
-    Sf12 = 12,
+    Sf12 = 12
 }
 
 public enum SignalBandwidth
 {
     Khz125 = 125_000,
     Khz250 = 250_000,
-    Khz500 = 500_000,
+    Khz500 = 500_000
 }
 
 public enum CodingRate
@@ -22,7 +22,7 @@ public enum CodingRate
     FourOfFive = 5,
     FourOfSix = 6,
     FourOfSeven = 7,
-    FourOfEight = 8,
+    FourOfEight = 8
 }
 
 public enum RadioMode
@@ -30,7 +30,7 @@ public enum RadioMode
     Sleep,
     Standby,
     Transmit,
-    ReceiveSingle,
+    ReceiveSingle
 }
 
 public sealed record TransmitResult(TimeSpan TimeOnAir, DateTimeOffset CompletedAt);

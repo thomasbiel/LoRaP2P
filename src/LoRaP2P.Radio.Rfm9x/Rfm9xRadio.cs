@@ -51,7 +51,7 @@ public sealed class Rfm9xRadio : ILoraRadio
         await _operationLock.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            byte version = _transport.ReadByte((byte)Rfm9xRegister.Version);
+            var version = _transport.ReadByte((byte)Rfm9xRegister.Version);
             if (version != Rfm9xBits.VersionExpected)
             {
                 throw new Rfm9xException($"SX1276/RFM95 not detected. Expected version 0x12, read 0x{version:X2}.");
@@ -111,7 +111,7 @@ public sealed class Rfm9xRadio : ILoraRadio
         try
         {
             await WaitForDutyCycleAsync(cancellationToken).ConfigureAwait(false);
-            TimeSpan timeOnAir = Rfm9xTimeOnAir.Calculate(payload.Length, _configuration);
+            var timeOnAir = Rfm9xTimeOnAir.Calculate(payload.Length, _configuration);
 
             _transport.WriteByte((byte)Rfm9xRegister.IrqFlags, Rfm9xBits.IrqClearAll);
             _transport.ClearDio0Signal();
@@ -128,14 +128,14 @@ public sealed class Rfm9xRadio : ILoraRadio
             try
             {
                 await _transport.WaitForDio0RisingEdgeAsync(timeoutSource.Token).ConfigureAwait(false);
-                byte irqFlags = _transport.ReadByte((byte)Rfm9xRegister.IrqFlags);
+                var irqFlags = _transport.ReadByte((byte)Rfm9xRegister.IrqFlags);
                 if ((irqFlags & Rfm9xBits.IrqTxDone) == 0)
                 {
                     throw new Rfm9xException($"DIO0 rose without TxDone. IRQ flags: 0x{irqFlags:X2}.");
                 }
 
-                DateTimeOffset completedAt = _timeProvider.GetUtcNow();
-                double offAirSeconds = timeOnAir.TotalSeconds * ((1 / _configuration.DutyCycle) - 1);
+                var completedAt = _timeProvider.GetUtcNow();
+                var offAirSeconds = timeOnAir.TotalSeconds * ((1 / _configuration.DutyCycle) - 1);
                 _nextTransmitAt = completedAt + TimeSpan.FromSeconds(offAirSeconds);
                 return new TransmitResult(timeOnAir, completedAt);
             }
@@ -177,7 +177,7 @@ public sealed class Rfm9xRadio : ILoraRadio
             try
             {
                 await _transport.WaitForDio0RisingEdgeAsync(timeoutSource.Token).ConfigureAwait(false);
-                byte irqFlags = _transport.ReadByte((byte)Rfm9xRegister.IrqFlags);
+                var irqFlags = _transport.ReadByte((byte)Rfm9xRegister.IrqFlags);
                 if ((irqFlags & Rfm9xBits.IrqRxTimeout) != 0)
                 {
                     return null;
@@ -212,8 +212,8 @@ public sealed class Rfm9xRadio : ILoraRadio
         await _operationLock.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            byte version = _transport.ReadByte((byte)Rfm9xRegister.Version);
-            byte irqFlags = _transport.ReadByte((byte)Rfm9xRegister.IrqFlags);
+            var version = _transport.ReadByte((byte)Rfm9xRegister.Version);
+            var irqFlags = _transport.ReadByte((byte)Rfm9xRegister.IrqFlags);
             return new RadioStatus(version, _mode, irqFlags, _configuration);
         }
         finally
@@ -237,9 +237,9 @@ public sealed class Rfm9xRadio : ILoraRadio
         try
         {
             var result = new Dictionary<byte, byte>(count);
-            for (int offset = 0; offset < count; offset++)
+            for (var offset = 0; offset < count; offset++)
             {
-                byte address = checked((byte)(startAddress + offset));
+                var address = checked((byte)(startAddress + offset));
                 result.Add(address, _transport.ReadByte(address));
             }
 
@@ -267,7 +267,7 @@ public sealed class Rfm9xRadio : ILoraRadio
 
     private void WriteFrequency(double frequencyHertz)
     {
-        int registerValue = Rfm9xFrequency.ToRegisterValue(frequencyHertz);
+        var registerValue = Rfm9xFrequency.ToRegisterValue(frequencyHertz);
         _transport.WriteByte((byte)Rfm9xRegister.FrequencyMsb, (byte)(registerValue >> 16));
         _transport.WriteByte((byte)Rfm9xRegister.FrequencyMid, (byte)(registerValue >> 8));
         _transport.WriteByte((byte)Rfm9xRegister.FrequencyLsb, (byte)registerValue);
@@ -280,14 +280,14 @@ public sealed class Rfm9xRadio : ILoraRadio
             SignalBandwidth.Khz125 => 0x70,
             SignalBandwidth.Khz250 => 0x80,
             SignalBandwidth.Khz500 => 0x90,
-            _ => throw new ArgumentOutOfRangeException(nameof(configuration)),
+            _ => throw new ArgumentOutOfRangeException(nameof(configuration))
         };
-        byte codingRateBits = (byte)(((int)configuration.CodingRate - 4) << 1);
-        byte modemConfig1 = (byte)(bandwidthBits | codingRateBits | (configuration.ImplicitHeader ? 0x01 : 0x00));
-        byte modemConfig2 = (byte)(((int)configuration.SpreadingFactor << 4) | (configuration.PayloadCrcEnabled ? 0x04 : 0x00));
+        var codingRateBits = (byte)(((int)configuration.CodingRate - 4) << 1);
+        var modemConfig1 = (byte)(bandwidthBits | codingRateBits | (configuration.ImplicitHeader ? 0x01 : 0x00));
+        var modemConfig2 = (byte)(((int)configuration.SpreadingFactor << 4) | (configuration.PayloadCrcEnabled ? 0x04 : 0x00));
 
-        double symbolDurationSeconds = Math.Pow(2, (int)configuration.SpreadingFactor) / (int)configuration.Bandwidth;
-        byte modemConfig3 = (byte)(0x04 | (symbolDurationSeconds > 0.016 ? 0x08 : 0x00));
+        var symbolDurationSeconds = Math.Pow(2, (int)configuration.SpreadingFactor) / (int)configuration.Bandwidth;
+        var modemConfig3 = (byte)(0x04 | (symbolDurationSeconds > 0.016 ? 0x08 : 0x00));
 
         _transport.WriteByte((byte)Rfm9xRegister.ModemConfig1, modemConfig1);
         _transport.WriteByte((byte)Rfm9xRegister.ModemConfig2, modemConfig2);
@@ -308,47 +308,47 @@ public sealed class Rfm9xRadio : ILoraRadio
 
     private void WriteDio0Mapping(byte mapping)
     {
-        byte currentValue = _transport.ReadByte((byte)Rfm9xRegister.DioMapping1);
+        var currentValue = _transport.ReadByte((byte)Rfm9xRegister.DioMapping1);
         _transport.WriteByte((byte)Rfm9xRegister.DioMapping1, (byte)((currentValue & 0x3F) | mapping));
     }
 
     private ReceivedPacket ReadReceivedPacket(byte irqFlags)
     {
-        byte currentAddress = _transport.ReadByte((byte)Rfm9xRegister.FifoRxCurrentAddress);
-        byte payloadLength = _transport.ReadByte((byte)Rfm9xRegister.RxByteCount);
+        var currentAddress = _transport.ReadByte((byte)Rfm9xRegister.FifoRxCurrentAddress);
+        var payloadLength = _transport.ReadByte((byte)Rfm9xRegister.RxByteCount);
         _transport.WriteByte((byte)Rfm9xRegister.FifoAddressPointer, currentAddress);
 
-        byte[] payload = new byte[payloadLength];
+        var payload = new byte[payloadLength];
         _transport.Read((byte)Rfm9xRegister.Fifo, payload);
 
-        double packetSnrDb = unchecked((sbyte)_transport.ReadByte((byte)Rfm9xRegister.PacketSnr)) * 0.25;
+        var packetSnrDb = unchecked((sbyte)_transport.ReadByte((byte)Rfm9xRegister.PacketSnr)) * 0.25;
         int rawRssi = _transport.ReadByte((byte)Rfm9xRegister.PacketRssi);
-        int packetRssiDbm = (int)Math.Round(-157 + rawRssi + Math.Min(packetSnrDb, 0));
-        bool hasPayloadCrc = (_transport.ReadByte((byte)Rfm9xRegister.HopChannel) & Rfm9xBits.HopChannelPayloadCrc) != 0;
-        bool isCrcValid = (irqFlags & Rfm9xBits.IrqPayloadCrcError) == 0
-            && (!_configuration.PayloadCrcEnabled || hasPayloadCrc);
+        var packetRssiDbm = (int)Math.Round(-157 + rawRssi + Math.Min(packetSnrDb, 0));
+        var hasPayloadCrc = (_transport.ReadByte((byte)Rfm9xRegister.HopChannel) & Rfm9xBits.HopChannelPayloadCrc) != 0;
+        var isCrcValid = (irqFlags & Rfm9xBits.IrqPayloadCrcError) == 0
+                         && (!_configuration.PayloadCrcEnabled || hasPayloadCrc);
 
         return new ReceivedPacket(payload, isCrcValid, packetRssiDbm, packetSnrDb);
     }
 
     private void SetMode(RadioMode mode)
     {
-        byte modeBits = mode switch
+        var modeBits = mode switch
         {
             RadioMode.Sleep => Rfm9xBits.ModeSleep,
             RadioMode.Standby => Rfm9xBits.ModeStandby,
             RadioMode.Transmit => Rfm9xBits.ModeTransmit,
             RadioMode.ReceiveSingle => Rfm9xBits.ModeReceiveSingle,
-            _ => throw new ArgumentOutOfRangeException(nameof(mode)),
+            _ => throw new ArgumentOutOfRangeException(nameof(mode))
         };
-        byte lowFrequencyBit = _configuration.FrequencyHertz < 525_000_000 ? Rfm9xBits.LowFrequencyMode : (byte)0;
+        var lowFrequencyBit = _configuration.FrequencyHertz < 525_000_000 ? Rfm9xBits.LowFrequencyMode : (byte)0;
         _transport.WriteByte((byte)Rfm9xRegister.OpMode, (byte)(Rfm9xBits.LongRangeMode | lowFrequencyBit | modeBits));
         _mode = mode;
     }
 
     private async Task WaitForDutyCycleAsync(CancellationToken cancellationToken)
     {
-        DateTimeOffset now = _timeProvider.GetUtcNow();
+        var now = _timeProvider.GetUtcNow();
         if (_nextTransmitAt > now)
         {
             await Task.Delay(_nextTransmitAt - now, _timeProvider, cancellationToken).ConfigureAwait(false);

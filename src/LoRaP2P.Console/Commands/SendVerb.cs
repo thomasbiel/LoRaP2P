@@ -1,8 +1,7 @@
 using System.Text;
 using CommandLine;
-using LoRaP2P.Radio.Rfm9x;
 
-namespace LoRaP2P.ConsoleApp.Commands;
+namespace LoRaP2P.Console.Commands;
 
 [Verb("send", HelpText = "Transmit a UTF-8 or hexadecimal payload.")]
 internal sealed class SendVerb : IConsoleVerb
@@ -13,20 +12,17 @@ internal sealed class SendVerb : IConsoleVerb
     [Value(1, MetaName = "value", Required = true, Min = 1, HelpText = "Payload value")]
     public IEnumerable<string> PayloadParts { get; set; } = [];
 
-    public async Task<CommandOutcome> ExecuteAsync(
-        CommandContext context,
-        CancellationToken cancellationToken)
+    public async Task<CommandOutcome> ExecuteAsync(CommandContext context, CancellationToken cancellationToken)
     {
-        byte[] payload = Format.ToLowerInvariant() switch
+        var payload = this.Format.ToLowerInvariant() switch
         {
-            "text" => Encoding.UTF8.GetBytes(string.Join(' ', PayloadParts)),
-            "hex" => Convert.FromHexString(string.Concat(PayloadParts)),
-            _ => throw new FormatException("Format must be text or hex."),
+            "text" => Encoding.UTF8.GetBytes(string.Join(' ', this.PayloadParts)),
+            "hex" => Convert.FromHexString(string.Concat(this.PayloadParts)),
+            _ => throw new FormatException("Format must be text or hex.")
         };
 
-        TransmitResult result = await context.Radio.TransmitAsync(payload, cancellationToken);
-        context.Output.WriteLine(
-            $"TxDone: {payload.Length} bytes, time-on-air {result.TimeOnAir.TotalMilliseconds:F1} ms.");
+        var result = await context.Radio.TransmitAsync(payload, cancellationToken);
+        await context.Output.WriteLineAsync($"TxDone: {payload.Length} bytes, time-on-air {result.TimeOnAir.TotalMilliseconds:F1} ms.");
         return CommandOutcome.Continue;
     }
 }

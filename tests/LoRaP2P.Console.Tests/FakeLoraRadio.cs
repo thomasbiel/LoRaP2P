@@ -20,35 +20,30 @@ internal sealed class FakeLoraRadio : ILoraRadio
         return Task.CompletedTask;
     }
 
-    public Task<byte> ProbeAsync(CancellationToken cancellationToken = default) =>
-        Task.FromResult((byte)0x12);
+    public Task<byte> ProbeAsync(CancellationToken cancellationToken = default) => Task.FromResult((byte)0x12);
 
-    public Task ConfigureAsync(
-        RadioConfiguration configuration,
-        CancellationToken cancellationToken = default)
+    public Task ConfigureAsync(RadioConfiguration configuration, CancellationToken cancellationToken = default)
     {
         Configuration = configuration;
         return Task.CompletedTask;
     }
 
-    public Task<TransmitResult> TransmitAsync(
-        ReadOnlyMemory<byte> payload,
-        CancellationToken cancellationToken = default)
+    public Task<TransmitResult> TransmitAsync(ReadOnlyMemory<byte> payload, CancellationToken cancellationToken = default)
     {
         TransmittedPayload = payload.ToArray();
         return Task.FromResult(new TransmitResult(TimeSpan.FromMilliseconds(10), DateTimeOffset.UtcNow));
     }
 
-    public Task<ReceivedPacket?> ReceiveSingleAsync(
-        TimeSpan timeout,
-        CancellationToken cancellationToken = default)
+    public Task<ReceivedPacket?> ReceiveSingleAsync(TimeSpan timeout, CancellationToken cancellationToken = default)
     {
         ReceiveTimeout = timeout;
         return Task.FromResult<ReceivedPacket?>(null);
     }
 
-    public Task<RadioStatus> GetStatusAsync(CancellationToken cancellationToken = default) =>
-        Task.FromResult(new RadioStatus(0x12, RadioMode.Standby, 0, Configuration));
+    public Task<RadioStatus> GetStatusAsync(CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult(new RadioStatus(0x12, RadioMode.Standby, 0, Configuration));
+    }
 
     public Task<IReadOnlyDictionary<byte, byte>> ReadRegistersAsync(
         byte startAddress,
@@ -56,11 +51,7 @@ internal sealed class FakeLoraRadio : ILoraRadio
         CancellationToken cancellationToken = default)
     {
         RegisterRead = (startAddress, count);
-        IReadOnlyDictionary<byte, byte> registers = new Dictionary<byte, byte>
-        {
-            [startAddress] = 0x12,
-        };
-        return Task.FromResult(registers);
+        return Task.FromResult<IReadOnlyDictionary<byte, byte>>(new Dictionary<byte, byte> { [startAddress] = 0x12 });
     }
 
     public ValueTask DisposeAsync() => ValueTask.CompletedTask;

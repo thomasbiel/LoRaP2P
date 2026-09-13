@@ -33,7 +33,7 @@ internal enum Rfm9xRegister : byte
     SyncWord = 0x39,
     InvertIq2 = 0x3B,
     DioMapping1 = 0x40,
-    Version = 0x42,
+    Version = 0x42
 }
 
 internal static class Rfm9xBits

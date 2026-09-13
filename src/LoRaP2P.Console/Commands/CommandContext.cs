@@ -1,6 +1,6 @@
 using LoRaP2P.Radio.Rfm9x;
 
-namespace LoRaP2P.ConsoleApp.Commands;
+namespace LoRaP2P.Console.Commands;
 
 internal sealed class CommandContext(
     ILoraRadio radio,

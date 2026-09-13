@@ -8,7 +8,7 @@ public static class Rfm9xFrequency
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(frequencyHertz);
 
-        int registerValue = checked((int)Math.Round(frequencyHertz / FrequencyStepHertz));
+        var registerValue = checked((int)Math.Round(frequencyHertz / FrequencyStepHertz));
         if (registerValue > 0xFFFFFF)
         {
             throw new ArgumentOutOfRangeException(nameof(frequencyHertz));

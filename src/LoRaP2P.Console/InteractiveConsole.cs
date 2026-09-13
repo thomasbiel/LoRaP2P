@@ -1,7 +1,7 @@
-using LoRaP2P.ConsoleApp.Commands;
+using LoRaP2P.Console.Commands;
 using LoRaP2P.Radio.Rfm9x;
 
-namespace LoRaP2P.ConsoleApp;
+namespace LoRaP2P.Console;
 
 internal static class InteractiveConsole
 {
@@ -18,9 +18,9 @@ internal static class InteractiveConsole
 
         while (!cancellationToken.IsCancellationRequested)
         {
-            output.Write("lora> ");
+            await output.WriteAsync("lora> ");
             await output.FlushAsync(cancellationToken);
-            string? line = await input.ReadLineAsync(cancellationToken);
+            var line = await input.ReadLineAsync(cancellationToken);
             if (line is null)
             {
                 return 0;
@@ -34,7 +34,7 @@ internal static class InteractiveConsole
 
             try
             {
-                CommandOutcome outcome = await parser.ParseAndExecuteAsync(line, context, cancellationToken);
+                var outcome = await parser.ParseAndExecuteAsync(line, context, cancellationToken);
                 if (outcome == CommandOutcome.Exit)
                 {
                     return 0;
@@ -42,7 +42,7 @@ internal static class InteractiveConsole
             }
             catch (Exception exception) when (IsExpectedCommandException(exception))
             {
-                error.WriteLine($"Command failed: {exception.Message}");
+                await error.WriteLineAsync($"Command failed: {exception.Message}");
             }
         }
 

@@ -1,4 +1,4 @@
-namespace LoRaP2P.ConsoleApp.Commands;
+namespace LoRaP2P.Console.Commands;
 
 internal interface IConsoleVerb
 {

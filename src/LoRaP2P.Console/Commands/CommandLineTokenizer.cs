@@ -1,6 +1,6 @@
 using System.Text;
 
-namespace LoRaP2P.ConsoleApp.Commands;
+namespace LoRaP2P.Console.Commands;
 
 internal static class CommandLineTokenizer
 {
@@ -8,12 +8,12 @@ internal static class CommandLineTokenizer
     {
         List<string> arguments = [];
         StringBuilder current = new();
-        bool insideQuotes = false;
-        bool tokenStarted = false;
+        var insideQuotes = false;
+        var tokenStarted = false;
 
-        for (int index = 0; index < commandLine.Length; index++)
+        for (var index = 0; index < commandLine.Length; index++)
         {
-            char character = commandLine[index];
+            var character = commandLine[index];
             if (character == '"')
             {
                 insideQuotes = !insideQuotes;

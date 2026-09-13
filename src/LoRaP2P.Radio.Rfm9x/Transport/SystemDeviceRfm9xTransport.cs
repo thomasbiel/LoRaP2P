@@ -24,7 +24,7 @@ public sealed class SystemDeviceRfm9xTransport : IRfm9xRegisterTransport
         {
             ClockFrequency = 5_000_000,
             DataBitLength = 8,
-            Mode = SpiMode.Mode0,
+            Mode = SpiMode.Mode0
         };
 
         _spiDevice = SpiDevice.Create(connectionSettings);
@@ -62,8 +62,8 @@ public sealed class SystemDeviceRfm9xTransport : IRfm9xRegisterTransport
         ObjectDisposedException.ThrowIf(_disposed, this);
         ValidateAddress(address);
 
-        byte[] writeBuffer = new byte[destination.Length + 1];
-        byte[] readBuffer = new byte[destination.Length + 1];
+        var writeBuffer = new byte[destination.Length + 1];
+        var readBuffer = new byte[destination.Length + 1];
         writeBuffer[0] = (byte)(address & ReadMask);
 
         lock (_spiLock)
@@ -86,7 +86,7 @@ public sealed class SystemDeviceRfm9xTransport : IRfm9xRegisterTransport
         ObjectDisposedException.ThrowIf(_disposed, this);
         ValidateAddress(address);
 
-        byte[] writeBuffer = new byte[source.Length + 1];
+        var writeBuffer = new byte[source.Length + 1];
         writeBuffer[0] = (byte)(address | WriteMask);
         source.CopyTo(writeBuffer.AsSpan(1));
 

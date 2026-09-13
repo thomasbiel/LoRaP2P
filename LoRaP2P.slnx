@@ -1,0 +1,11 @@
+<Solution>
+  <Configurations>
+    <Platform Name="Any CPU" />
+  </Configurations>
+  <Project Path="src/LoRaP2P.Console/LoRaP2P.Console.csproj" />
+  <Project Path="src/LoRaP2P.Radio.Rfm9x/LoRaP2P.Radio.Rfm9x.csproj" />
+  <Folder Name="/tests/">
+    <Project Path="tests/LoRaP2P.Radio.Rfm9x.Tests/LoRaP2P.Radio.Rfm9x.Tests.csproj" />
+    <Project Path="tests/LoRaP2P.Console.Tests/LoRaP2P.Console.Tests.csproj" />
+  </Folder>
+</Solution>

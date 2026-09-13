@@ -1,7 +1,7 @@
-namespace LoRaP2P.ConsoleApp.Commands;
+namespace LoRaP2P.Console.Commands;
 
 internal enum CommandOutcome
 {
     Continue,
-    Exit,
+    Exit
 }
