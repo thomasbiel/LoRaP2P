@@ -32,25 +32,22 @@ internal static class Program
         });
         
         var parseResult = parser.ParseArguments<StartupOptions>(args);
-        if (parseResult is NotParsed<StartupOptions> notParsed)
-        {
-            var informationRequested = notParsed.Errors.All(error => error is HelpRequestedError or VersionRequestedError);
-            return informationRequested ? 0 : 1;
-        }
+        return await parseResult.MapResult(options => RunAsync(options, shutdown.Token), HandleParseErrors);
+    }
 
-        var options = ((Parsed<StartupOptions>)parseResult).Value;
-
+    private static async Task<int> RunAsync(StartupOptions options, CancellationToken cancellationToken)
+    {
         try
         {
             var configurationPath = options.ResolveConfigurationPath();
-            var configuration = await LoadConfigurationAsync(configurationPath, shutdown.Token);
+            var configuration = await LoadConfigurationAsync(configurationPath, cancellationToken);
             configuration.Validate();
 
             using var transport = new SystemDeviceRfm9xTransport(configuration);
             await using var radio = new Rfm9xRadio(transport);
-            await radio.ResetAsync(shutdown.Token);
-            var version = await radio.ProbeAsync(shutdown.Token);
-            await radio.ConfigureAsync(configuration, shutdown.Token);
+            await radio.ResetAsync(cancellationToken);
+            var version = await radio.ProbeAsync(cancellationToken);
+            await radio.ConfigureAsync(configuration, cancellationToken);
 
             System.Console.WriteLine($"RFM95 detected (version 0x{version:X2}). Raw LoRa EU868 console ready.");
             System.Console.WriteLine("Enter 'help' for commands. Ctrl+C exits safely.");
@@ -60,7 +57,7 @@ internal static class Program
                 System.Console.In,
                 System.Console.Out,
                 System.Console.Error,
-                shutdown.Token);
+                cancellationToken);
         }
         catch (OperationCanceledException)
         {
@@ -72,6 +69,12 @@ internal static class Program
             await System.Console.Error.WriteLineAsync($"Startup failed: {exception.Message}");
             return 1;
         }
+    }
+
+    private static Task<int> HandleParseErrors(IEnumerable<Error> errors)
+    {
+        var informationRequested = errors.All(error => error is HelpRequestedError or VersionRequestedError);
+        return Task.FromResult(informationRequested ? 0 : 1);
     }
 
     private static async Task<RadioConfiguration> LoadConfigurationAsync(string path, CancellationToken cancellationToken)

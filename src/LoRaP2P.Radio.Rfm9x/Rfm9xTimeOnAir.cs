@@ -17,6 +17,7 @@ public static class Rfm9xTimeOnAir
             + 28
             + (configuration.PayloadCrcEnabled ? 16 : 0)
             - (configuration.ImplicitHeader ? 20 : 0);
+        
         double denominator = 4 * (spreadingFactor - (lowDataRateOptimize ? 2 : 0));
         var payloadSymbols = 8 + Math.Max(
             Math.Ceiling(numerator / denominator) * (int)configuration.CodingRate,

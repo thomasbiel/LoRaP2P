@@ -7,7 +7,7 @@ public sealed class SystemDeviceRfm9xTransport : IRfm9xRegisterTransport
 {
     private const byte ReadMask = 0x7F;
     private const byte WriteMask = 0x80;
-    private readonly object _spiLock = new();
+    private readonly Lock _spiLock = new();
     private readonly SpiDevice _spiDevice;
     private readonly GpioController _gpioController;
     private readonly int _resetPin;
@@ -128,7 +128,6 @@ public sealed class SystemDeviceRfm9xTransport : IRfm9xRegisterTransport
         _gpioController.Dispose();
         _spiDevice.Dispose();
         _dio0Signal.Dispose();
-        GC.SuppressFinalize(this);
     }
 
     private static void ValidateAddress(byte address)

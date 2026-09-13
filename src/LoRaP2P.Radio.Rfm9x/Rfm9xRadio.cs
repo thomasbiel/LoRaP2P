@@ -96,9 +96,7 @@ public sealed class Rfm9xRadio : ILoraRadio
         }
     }
 
-    public async Task<TransmitResult> TransmitAsync(
-        ReadOnlyMemory<byte> payload,
-        CancellationToken cancellationToken = default)
+    public async Task<TransmitResult> TransmitAsync(ReadOnlyMemory<byte> payload, CancellationToken cancellationToken = default)
     {
         ThrowIfDisposed();
         EnsureConfigured();
@@ -155,9 +153,7 @@ public sealed class Rfm9xRadio : ILoraRadio
         }
     }
 
-    public async Task<ReceivedPacket?> ReceiveSingleAsync(
-        TimeSpan timeout,
-        CancellationToken cancellationToken = default)
+    public async Task<ReceivedPacket?> ReceiveSingleAsync(TimeSpan timeout, CancellationToken cancellationToken = default)
     {
         ThrowIfDisposed();
         EnsureConfigured();
@@ -261,7 +257,6 @@ public sealed class Rfm9xRadio : ILoraRadio
         _disposed = true;
         _transport.Dispose();
         _operationLock.Dispose();
-        GC.SuppressFinalize(this);
         return ValueTask.CompletedTask;
     }
 
@@ -282,6 +277,7 @@ public sealed class Rfm9xRadio : ILoraRadio
             SignalBandwidth.Khz500 => 0x90,
             _ => throw new ArgumentOutOfRangeException(nameof(configuration))
         };
+        
         var codingRateBits = (byte)(((int)configuration.CodingRate - 4) << 1);
         var modemConfig1 = (byte)(bandwidthBits | codingRateBits | (configuration.ImplicitHeader ? 0x01 : 0x00));
         var modemConfig2 = (byte)(((int)configuration.SpreadingFactor << 4) | (configuration.PayloadCrcEnabled ? 0x04 : 0x00));
@@ -325,8 +321,7 @@ public sealed class Rfm9xRadio : ILoraRadio
         int rawRssi = _transport.ReadByte((byte)Rfm9xRegister.PacketRssi);
         var packetRssiDbm = (int)Math.Round(-157 + rawRssi + Math.Min(packetSnrDb, 0));
         var hasPayloadCrc = (_transport.ReadByte((byte)Rfm9xRegister.HopChannel) & Rfm9xBits.HopChannelPayloadCrc) != 0;
-        var isCrcValid = (irqFlags & Rfm9xBits.IrqPayloadCrcError) == 0
-                         && (!_configuration.PayloadCrcEnabled || hasPayloadCrc);
+        var isCrcValid = (irqFlags & Rfm9xBits.IrqPayloadCrcError) == 0 && (!_configuration.PayloadCrcEnabled || hasPayloadCrc);
 
         return new ReceivedPacket(payload, isCrcValid, packetRssiDbm, packetSnrDb);
     }
@@ -341,6 +336,7 @@ public sealed class Rfm9xRadio : ILoraRadio
             RadioMode.ReceiveSingle => Rfm9xBits.ModeReceiveSingle,
             _ => throw new ArgumentOutOfRangeException(nameof(mode))
         };
+        
         var lowFrequencyBit = _configuration.FrequencyHertz < 525_000_000 ? Rfm9xBits.LowFrequencyMode : (byte)0;
         _transport.WriteByte((byte)Rfm9xRegister.OpMode, (byte)(Rfm9xBits.LongRangeMode | lowFrequencyBit | modeBits));
         _mode = mode;
