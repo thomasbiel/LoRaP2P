@@ -1,8 +1,8 @@
 # LoRaP2P Console
 
-.NET-10-Raw-LoRa-PoC für Raspberry Pi 3B+ und Adafruit RFM95W Radio Bonnet. Das Projekt portiert die grundlegende RFM9x-Registersteuerung auf `System.Device.Gpio` und schafft eine testbare Basis für einen späteren LoRaP2P-Class-A-Client.
+.NET-10-Raw-LoRa-PoC für Raspberry Pi 3B+ und Adafruit RFM95W Radio Bonnet. Das Projekt portiert die grundlegende RFM9x-Registersteuerung auf `System.Device.Gpio` und schafft eine testbare Basis für einen späteren LoRaWAN-Class-A-Client.
 
-> Der aktuelle Stand ist Raw LoRa, nicht LoRaP2P. `TxDone` bestätigt nur, dass der RFM95 den Sendevorgang beendet hat.
+> Der aktuelle Stand ist Raw LoRa, nicht LoRaWAN. `TxDone` bestätigt nur, dass der RFM95 den Sendevorgang beendet hat.
 
 Das vollständige Produktkonzept steht in [docs/PRD.md](docs/PRD.md).
 
@@ -41,10 +41,10 @@ Voraussetzung auf dem Entwicklungsrechner: .NET SDK 10.
 ```powershell
 dotnet restore
 dotnet build LoRaP2P.sln --configuration Release
-dotnet test tests/LoRaP2P.Radio.Rfm9x.Tests/LoRaP2P.Radio.Rfm9x.Tests.csproj --configuration Release
+dotnet test LoRaP2P.sln --configuration Release
 ```
 
-Die Tests verwenden NUnit und einen Fake-Registertransport. Sie benötigen keine Funkhardware.
+Die Tests verwenden NUnit, einen Fake-Registertransport und ein Fake-Radio. Sie benötigen keine Funkhardware.
 
 ## Für Raspberry Pi OS 64-bit veröffentlichen
 
@@ -92,12 +92,10 @@ Mit einem einzelnen Bonnet lassen sich SPI, Register, Modemkonfiguration, FIFO u
 ## Projektstruktur
 
 ```text
-src/LoRaP2P.Console             Interaktive Konsole und Konfiguration
+src/LoRaP2P.Console/Commands    CommandLineParser-Verben der interaktiven Konsole
+src/LoRaP2P.Console             Konfiguration und Anwendungskomposition
 src/LoRaP2P.Radio.Rfm9x         Hardwaretransport und SX1276/RFM95-Treiber
-tests/LoRaP2P.Radio.Rfm9x.Tests Hardwarefreie NUnit-Tests
+tests/LoRaP2P.Console.Tests     Hardwarefreie Tests der Kommandoverarbeitung
+tests/LoRaP2P.Radio.Rfm9x.Tests Hardwarefreie Tests des Radiotreibers
 docs/PRD.md                     Produktanforderungen und Ausbaustufen
 ```
-
-## Späterer LoRaP2P-Ausbau
-
-Für echtes LoRaP2P werden zusätzlich ein LoRaP2P-1.0.4-Class-A-MAC, OTAA, kryptografischer Sitzungszustand, persistente Zähler, EU868-Kanalverwaltung und ein echter SX1302/SX1303-Multichannel-Gateway mit The Things Stack oder ChirpStack benötigt. Ein zweites RFM95 ist eine Raw-LoRa-Testgegenstelle, kein LoRaP2P-Gateway.

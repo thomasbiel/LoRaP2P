@@ -17,3 +17,10 @@ The original project targets Windows 10 IoT Core/UWP. This repository replaces i
 - Project: .NET IoT Libraries
 - Repository: <https://github.com/dotnet/iot>
 - License: MIT
+
+## CommandLineParser
+
+- Project: Command Line Parser Library for CLR and NetStandard
+- Repository: <https://github.com/commandlineparser/commandline>
+- Copyright: 2005-2015 Giacomo Stelluti Scala and contributors
+- License: MIT

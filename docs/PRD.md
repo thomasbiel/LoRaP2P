@@ -1,4 +1,4 @@
-# Product Requirements Document: RFM95 Funk-Client als LoRaP2P-Basis
+# Product Requirements Document: RFM95 Funk-Client als LoRaWAN-Basis
 
 ## 1. Dokumentstatus
 
@@ -13,9 +13,9 @@
 
 ## 2. Ausgangslage
 
-Ein Raspberry Pi 3B+ mit Adafruit LoRa Radio Bonnet soll über eine .NET-10-Konsolenanwendung angesprochen werden. Als technische Vorlage dient `KiwiBryn/RFM9XLoRa-Net`. Dieses Projekt enthält brauchbare SX1276/RFM95-Register- und FIFO-Logik, basiert aber auf archivierten UWP-APIs und implementiert nur Raw LoRa, nicht LoRaP2P.
+Ein Raspberry Pi 3B+ mit Adafruit LoRa Radio Bonnet soll über eine .NET-10-Konsolenanwendung angesprochen werden. Als technische Vorlage dient `KiwiBryn/RFM9XLoRa-Net`. Dieses Projekt enthält brauchbare SX1276/RFM95-Register- und FIFO-Logik, basiert aber auf archivierten UWP-APIs und implementiert nur Raw LoRa, nicht LoRaWAN.
 
-Version 1 validiert deshalb zuerst den direkten SPI-/GPIO-Zugriff und den Funkbetrieb. Ein vollständiger LoRaP2P-Endgerätestack wird erst auf einer nachweislich funktionierenden Funkabstraktion aufgebaut.
+Version 1 validiert deshalb zuerst den direkten SPI-/GPIO-Zugriff und den Funkbetrieb.
 
 ## 3. Produktziel
 
@@ -25,16 +25,15 @@ Bereitstellung eines testbaren .NET-10-RFM95-Treibers und einer interaktiven Kon
 - EU868-konforme PoC-Parameter validieren,
 - Raw-LoRa-Payloads senden und empfangen,
 - Register und Funkstatus diagnostizieren,
-- Treiberverhalten ohne Raspberry-Pi-Hardware per NUnit prüfen,
-- später einen LoRaP2P-1.0.4-Class-A-MAC oberhalb einer stabilen Radio-API ergänzen können.
+- Treiberverhalten ohne Raspberry-Pi-Hardware per NUnit prüfen
 
 ## 4. Nichtziele von Version 1
 
-- Kein LoRaP2P OTAA oder ABP
-- Keine LoRaP2P-Verschlüsselung, MIC-Berechnung oder Session Keys
+- Kein LoRaWAN OTAA oder ABP
+- Keine LoRaWAN-Verschlüsselung, MIC-Berechnung oder Session Keys
 - Keine ADR- oder MAC-Command-Verarbeitung
 - Keine persistenten Frame Counter oder Nonces
-- Kein LoRaP2P-Gateway und kein Network Server
+- Kein LoRaWAN-Gateway und kein Network Server
 - Keine OLED- oder Tastersteuerung
 - Kein systemd-Dienst und keine unbeaufsichtigte Sensoranwendung
 - Keine Bestätigung des Funkempfangs mit nur einem Transceiver
@@ -147,6 +146,7 @@ Eine generische Register-Schreibfunktion ist absichtlich nicht Teil des normalen
 ### NFR-001: Testbarkeit
 
 - Radiozustandsmaschine MUSS ausschließlich von `IRfm9xRegisterTransport` abhängen.
+- Konsolenbefehle MÜSSEN ausschließlich über `ILoraRadio` testbar sein.
 - Unit-Tests MÜSSEN ohne GPIO, SPI oder Raspberry Pi ausführbar sein.
 - NUnit 4.4.0 und NUnit3TestAdapter 5.0.0 werden verwendet.
 
@@ -166,14 +166,15 @@ Eine generische Register-Schreibfunktion ist absichtlich nicht Teil des normalen
 ### NFR-004: Wartbarkeit
 
 - Hardwaretransport, RFM95-Treiber, Konsolen-UI und Tests bleiben getrennt.
-- `ILoraRadio` enthält keine LoRaP2P-spezifischen Typen.
+- `ILoraRadio` enthält keine LoRaWAN-spezifischen Typen.
 - Build-Warnungen werden als Fehler behandelt.
 
 ## 9. Architektur
 
 ```mermaid
 flowchart TD
-    CLI[LoRaP2P.Console] --> API[ILoraRadio]
+    CLI[LoRaP2P.Console] --> VERBS[CommandLineParser-Verben]
+    VERBS --> API[ILoraRadio]
     API --> RADIO[Rfm9xRadio]
     RADIO --> PORT[IRfm9xRegisterTransport]
     PORT --> PI[SystemDeviceRfm9xTransport]
@@ -189,7 +190,8 @@ flowchart TD
 
 - `dotnet restore` ist erfolgreich.
 - `dotnet build LoRaP2P.sln --configuration Release` ist ohne Warnungen erfolgreich.
-- `dotnet test ... --configuration Release` führt alle NUnit-Tests erfolgreich aus.
+- `dotnet test LoRaP2P.sln --configuration Release` führt alle NUnit-Tests erfolgreich aus.
+- Kommando-Parsing und alle Verben sind ohne Funkhardware getestet.
 - Frequenzkonvertierung, EU868-Validierung, Time-on-Air, Registerkonfiguration, TX, RX und Reset/Probe sind getestet.
 - `linux-arm64` Self-contained Publish ist erfolgreich.
 
@@ -217,11 +219,11 @@ flowchart TD
 | DIO0-Flanke fehlt | Konfigurierbarer Timeout, Standby-Recovery und Diagnose über Registerdump |
 | Ursprungsprojekt ist archiviert | Nur Registerwissen übernehmen; moderne, eigene Transport- und Zustandsarchitektur |
 | Ein Bonnet reicht nicht für End-to-End-Test | Zweites RFM9x-Gerät als definierter Folgemeilenstein |
-| RFM95 ist kein LoRaP2P-Gateway | Später echten SX1302/SX1303-Multichannel-Gateway einsetzen |
+| RFM95 ist kein LoRaWAN-Gateway | Später echten SX1302/SX1303-Multichannel-Gateway einsetzen |
 
 ## 12. Raw-LoRa-Zwei-Wege-Kommunikation
 
-Nach erfolgreichem bidirektionalem Funkgerätetest wird ein kleines P2P-Protokoll oberhalb von `ILoraRadio` implementiert. Zwei Raspberry Pis mit jeweils einem kompatiblen RFM9x-Transceiver kommunizieren direkt miteinander. Gateway, Network Server, Internetverbindung und LoRaP2P-Provisionierung werden dafür nicht benötigt.
+Nach erfolgreichem bidirektionalem Funkgerätetest wird ein kleines P2P-Protokoll oberhalb von `ILoraRadio` implementiert. Zwei Raspberry Pis mit jeweils einem kompatiblen RFM9x-Transceiver kommunizieren direkt miteinander. Gateway, Network Server, Internetverbindung und LoRaWAN-Provisionierung werden dafür nicht benötigt.
 
 ### 12.1 Gemeinsames Funkprofil
 
@@ -300,4 +302,4 @@ Die Konsole wird um folgende Befehle erweitert:
 - Bei aktivierter Verschlüsselung werden manipulierte Frames und wiederverwendete Nonces abgelehnt.
 - Alle Frame-, ACK-, Retry-, Duplikat- und Kryptografiefälle sind mit NUnit ohne Funkhardware getestet.
 
-Diese P2P-Ausbaustufe ist ein eigenes Release und nicht Bestandteil der Akzeptanz von Version 1. Sie ersetzt keinen standardisierten LoRaP2P-Stack und ist nicht mit LoRaP2P-Gateways kompatibel.
+Diese P2P-Ausbaustufe ist ein eigenes Release und nicht Bestandteil der Akzeptanz von Version 1. Sie ersetzt keinen standardisierten LoRaWAN-Stack und ist nicht mit LoRaWAN-Gateways kompatibel.
