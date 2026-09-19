@@ -66,7 +66,12 @@ internal static class Program
         }
         catch (OperationCanceledException)
         {
-            System.Console.WriteLine("Operation cancelled.");
+            if (!System.Console.IsOutputRedirected)
+            {
+                // Clear the current console line before exiting (suppress "^C")
+                System.Console.Write("\r\u001b[2K");
+            }
+
             return 130;
         }
         catch (Exception exception) when (IsExpectedStartupException(exception))
