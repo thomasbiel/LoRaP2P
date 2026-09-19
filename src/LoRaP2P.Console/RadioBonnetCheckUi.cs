@@ -1,7 +1,5 @@
 using System.Device.Gpio;
 using System.Device.I2c;
-using Iot.Device.Ssd13xx;
-using Ssd1306Commands = Iot.Device.Ssd13xx.Commands.Ssd1306Commands;
 
 namespace LoRaP2P.Console;
 
@@ -59,7 +57,7 @@ internal sealed class SystemRadioBonnetCheckUi : IRadioBonnetCheckUi, IDisposabl
     };
 
     private readonly GpioController _gpioController;
-    private readonly Ssd1306 _display;
+    private readonly I2cDevice _display;
     private readonly byte[] _frameBuffer = new byte[DisplayWidth * DisplayHeight / 8];
     private bool _radioDetected;
 
@@ -81,7 +79,8 @@ internal sealed class SystemRadioBonnetCheckUi : IRadioBonnetCheckUi, IDisposabl
             _gpioController.OpenPin(ButtonCPin, PinMode.InputPullUp);
 
             i2cDevice = I2cDevice.Create(new I2cConnectionSettings(I2cBusId, DisplayAddress));
-            _display = new Ssd1306(i2cDevice, DisplayWidth, DisplayHeight);
+            _display = i2cDevice;
+            InitializeDisplay();
         }
         catch
         {
@@ -146,15 +145,12 @@ internal sealed class SystemRadioBonnetCheckUi : IRadioBonnetCheckUi, IDisposabl
             DrawText(84, 24, "Radio");
         }
 
-        _display.SendCommand(new Ssd1306Commands.SetColumnAddress());
-        _display.SendCommand(
-            new Ssd1306Commands.SetPageAddress(
-                Ssd1306Commands.PageAddress.Page0,
-                Ssd1306Commands.PageAddress.Page3));
+        WriteCommands(0x21, 0x00, 0x7F);
+        WriteCommands(0x22, 0x00, 0x03);
 
         for (var offset = 0; offset < _frameBuffer.Length; offset += 16)
         {
-            _display.SendData(_frameBuffer.AsSpan(offset, Math.Min(16, _frameBuffer.Length - offset)));
+            WriteData(_frameBuffer.AsSpan(offset, Math.Min(16, _frameBuffer.Length - offset)));
         }
     }
 
@@ -171,5 +167,42 @@ internal sealed class SystemRadioBonnetCheckUi : IRadioBonnetCheckUi, IDisposabl
             glyph.CopyTo(_frameBuffer, pageOffset + x);
             x += glyph.Length + 1;
         }
+    }
+
+    private void InitializeDisplay()
+    {
+        WriteCommands(0xAE);
+        WriteCommands(0xD5, 0x80);
+        WriteCommands(0xA8, 0x1F);
+        WriteCommands(0xD3, 0x00);
+        WriteCommands(0x40);
+        WriteCommands(0x8D, 0x14);
+        WriteCommands(0x20, 0x00);
+        WriteCommands(0xA1);
+        WriteCommands(0xC8);
+        WriteCommands(0xDA, 0x02);
+        WriteCommands(0x81, 0x8F);
+        WriteCommands(0xD9, 0xF1);
+        WriteCommands(0xDB, 0x40);
+        WriteCommands(0xA4);
+        WriteCommands(0xA6);
+        WriteCommands(0xAF);
+        Render(RadioBonnetButtons.None);
+    }
+
+    private void WriteCommands(params byte[] commands)
+    {
+        var buffer = new byte[commands.Length + 1];
+        buffer[0] = 0x00;
+        commands.CopyTo(buffer, 1);
+        _display.Write(buffer);
+    }
+
+    private void WriteData(ReadOnlySpan<byte> data)
+    {
+        Span<byte> buffer = stackalloc byte[data.Length + 1];
+        buffer[0] = 0x40;
+        data.CopyTo(buffer[1..]);
+        _display.Write(buffer);
     }
 }
