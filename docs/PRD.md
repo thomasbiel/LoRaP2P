@@ -248,6 +248,10 @@ flowchart TD
 
 Nach erfolgreichem bidirektionalem Funkgerätetest wird ein kleines P2P-Protokoll oberhalb von `ILoraRadio` implementiert. Zwei Raspberry Pis mit jeweils einem kompatiblen RFM9x-Transceiver kommunizieren direkt miteinander. Gateway, Network Server, Internetverbindung und LoRaWAN-Provisionierung werden dafür nicht benötigt.
 
+Die konkretisierte Spezifikation, Zielarchitektur, Umsetzungsschritte sowie
+Test- und Betriebsplanung stehen unter
+[docs/p2p/README.md](p2p/README.md).
+
 ### 12.1 Gemeinsames Funkprofil
 
 Beide Geräte MÜSSEN dieselben Werte für Frequenz, Spreading Factor, Bandbreite, Coding Rate, Präambel, Syncword, Header-Modus, Payload-CRC und IQ-Einstellung verwenden. Der Funkbetrieb bleibt halbduplex: Ein Gerät kann zu einem Zeitpunkt entweder senden oder empfangen.

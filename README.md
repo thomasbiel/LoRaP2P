@@ -5,6 +5,8 @@
 > Der aktuelle Stand ist Raw LoRa, nicht LoRaWAN. `TxDone` bestätigt nur, dass der RFM95 den Sendevorgang beendet hat.
 
 Das vollständige Produktkonzept steht in [docs/PRD.md](docs/PRD.md).
+Die geplante P2P-Ausbaustufe ist unter
+[docs/p2p/README.md](docs/p2p/README.md) spezifiziert.
 
 ## Hardware
 
