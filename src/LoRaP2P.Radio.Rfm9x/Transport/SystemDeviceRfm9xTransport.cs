@@ -12,10 +12,13 @@ public sealed class SystemDeviceRfm9xTransport : IRfm9xRegisterTransport
     private readonly GpioController _gpioController;
     private readonly int _resetPin;
     private readonly int _dio0Pin;
+    private readonly bool _dio0EventsEnabled;
     private readonly SemaphoreSlim _dio0Signal = new(0, 1);
     private bool _disposed;
 
-    public SystemDeviceRfm9xTransport(RadioConfiguration configuration)
+    public SystemDeviceRfm9xTransport(
+        RadioConfiguration configuration,
+        bool enableDio0Events = true)
     {
         ArgumentNullException.ThrowIfNull(configuration);
         configuration.Validate();
@@ -31,16 +34,20 @@ public sealed class SystemDeviceRfm9xTransport : IRfm9xRegisterTransport
         _gpioController = new GpioController();
         _resetPin = configuration.ResetPin;
         _dio0Pin = configuration.Dio0Pin;
+        _dio0EventsEnabled = enableDio0Events;
 
         try
         {
             _gpioController.OpenPin(_resetPin, PinMode.Output);
             _gpioController.Write(_resetPin, PinValue.High);
-            _gpioController.OpenPin(_dio0Pin, PinMode.Input);
-            _gpioController.RegisterCallbackForPinValueChangedEvent(
-                _dio0Pin,
-                PinEventTypes.Rising,
-                HandleDio0RisingEdge);
+            if (_dio0EventsEnabled)
+            {
+                _gpioController.OpenPin(_dio0Pin, PinMode.Input);
+                _gpioController.RegisterCallbackForPinValueChangedEvent(
+                    _dio0Pin,
+                    PinEventTypes.Rising,
+                    HandleDio0RisingEdge);
+            }
         }
         catch
         {
@@ -113,6 +120,11 @@ public sealed class SystemDeviceRfm9xTransport : IRfm9xRegisterTransport
     public ValueTask WaitForDio0RisingEdgeAsync(CancellationToken cancellationToken)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
+        if (!_dio0EventsEnabled)
+        {
+            throw new InvalidOperationException("DIO0 event monitoring is disabled.");
+        }
+
         return new ValueTask(_dio0Signal.WaitAsync(cancellationToken));
     }
 
@@ -124,7 +136,11 @@ public sealed class SystemDeviceRfm9xTransport : IRfm9xRegisterTransport
         }
 
         _disposed = true;
-        _gpioController.UnregisterCallbackForPinValueChangedEvent(_dio0Pin, HandleDio0RisingEdge);
+        if (_dio0EventsEnabled)
+        {
+            _gpioController.UnregisterCallbackForPinValueChangedEvent(_dio0Pin, HandleDio0RisingEdge);
+        }
+
         _gpioController.Dispose();
         _spiDevice.Dispose();
         _dio0Signal.Dispose();

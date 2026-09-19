@@ -43,20 +43,13 @@ internal static class Program
             var configuration = await LoadConfigurationAsync(configurationPath, cancellationToken);
             configuration.Validate();
 
-            using var transport = new SystemDeviceRfm9xTransport(configuration);
-            await using var radio = new Rfm9xRadio(transport);
             if (options.Check)
             {
-                using var bonnet = new SystemRadioBonnetCheckUi();
-                await RadioHardwareCheck.RunAsync(
-                    radio,
-                    configuration,
-                    bonnet,
-                    System.Console.Out,
-                    cancellationToken);
-                return 0;
+                return await RunHardwareCheckAsync(configuration, cancellationToken);
             }
 
+            using var transport = new SystemDeviceRfm9xTransport(configuration);
+            await using var radio = new Rfm9xRadio(transport);
             await radio.ResetAsync(cancellationToken);
             var version = await radio.ProbeAsync(cancellationToken);
             await radio.ConfigureAsync(configuration, cancellationToken);
@@ -80,6 +73,32 @@ internal static class Program
         {
             await System.Console.Error.WriteLineAsync($"Startup failed: {exception.Message}");
             return 1;
+        }
+    }
+
+    private static async Task<int> RunHardwareCheckAsync(
+        RadioConfiguration configuration,
+        CancellationToken cancellationToken)
+    {
+        using var bonnet = new SystemRadioBonnetCheckUi();
+        try
+        {
+            using var transport = new SystemDeviceRfm9xTransport(
+                configuration,
+                enableDio0Events: false);
+            await using var radio = new Rfm9xRadio(transport);
+            await RadioHardwareCheck.RunAsync(
+                radio,
+                configuration,
+                bonnet,
+                System.Console.Out,
+                cancellationToken);
+            return 0;
+        }
+        catch (Exception exception) when (IsExpectedStartupException(exception))
+        {
+            bonnet.ShowRadioStatus(detected: false);
+            throw;
         }
     }
 
