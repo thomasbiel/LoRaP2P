@@ -60,6 +60,7 @@ internal sealed class SystemRadioBonnetCheckUi : IRadioBonnetCheckUi, IDisposabl
     private readonly I2cDevice _display;
     private readonly byte[] _frameBuffer = new byte[DisplayWidth * DisplayHeight / 8];
     private bool _radioDetected;
+    private bool _disposed;
 
     public SystemRadioBonnetCheckUi()
     {
@@ -121,8 +122,21 @@ internal sealed class SystemRadioBonnetCheckUi : IRadioBonnetCheckUi, IDisposabl
 
     public void Dispose()
     {
-        _display.Dispose();
-        _gpioController.Dispose();
+        if (_disposed)
+        {
+            return;
+        }
+
+        _disposed = true;
+        try
+        {
+            WriteCommands(0xAE);
+        }
+        finally
+        {
+            _display.Dispose();
+            _gpioController.Dispose();
+        }
     }
 
     private void Render(RadioBonnetButtons buttons)
