@@ -69,6 +69,19 @@ Alternative Konfiguration:
 ./LoRaP2P.Console --config /etc/LoRaP2P/radio.json
 ```
 
+Grundlegende Verdrahtung, Funkhardware, OLED und Taster prüfen:
+
+```bash
+./LoRaP2P.Console --check
+```
+
+Der Check führt die Reset-Sequenz aus, prüft die SPI-/CE1-Kommunikation anhand
+des SX1276-Versionsregisters, wendet die Funkkonfiguration an und kontrolliert
+den Standby-Status. Das OLED zeigt anschließend `RFM9x: Detected`. Die Taster
+auf GPIO5, GPIO6 und GPIO12 blenden `Ada`, `Fruit` beziehungsweise `Radio` ein.
+Der Test läuft bis Ctrl+C. Es wird kein Paket gesendet und keine Gegenstelle
+benötigt.
+
 ## Befehle
 
 ```text

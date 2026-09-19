@@ -45,6 +45,18 @@ internal static class Program
 
             using var transport = new SystemDeviceRfm9xTransport(configuration);
             await using var radio = new Rfm9xRadio(transport);
+            if (options.Check)
+            {
+                using var bonnet = new SystemRadioBonnetCheckUi();
+                await RadioHardwareCheck.RunAsync(
+                    radio,
+                    configuration,
+                    bonnet,
+                    System.Console.Out,
+                    cancellationToken);
+                return 0;
+            }
+
             await radio.ResetAsync(cancellationToken);
             var version = await radio.ProbeAsync(cancellationToken);
             await radio.ConfigureAsync(configuration, cancellationToken);

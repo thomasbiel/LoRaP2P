@@ -34,7 +34,7 @@ Bereitstellung eines testbaren .NET-10-RFM95-Treibers und einer interaktiven Kon
 - Keine ADR- oder MAC-Command-Verarbeitung
 - Keine persistenten Frame Counter oder Nonces
 - Kein LoRaWAN-Gateway und kein Network Server
-- Keine OLED- oder Tastersteuerung
+- Keine OLED- oder Tastersteuerung außerhalb des interaktiven Hardwarechecks
 - Kein systemd-Dienst und keine unbeaufsichtigte Sensoranwendung
 - Keine Bestätigung des Funkempfangs mit nur einem Transceiver
 
@@ -74,6 +74,9 @@ Vor jedem Sendeversuch muss eine auf 868 MHz abgestimmte Antenne angeschlossen s
 
 - Anwendung MUSS Konfiguration aus `appsettings.json` laden.
 - Alternativer Pfad MUSS über `--config <path>` möglich sein.
+- `--check` MUSS Reset, SPI-Kommunikation, Chipversion, Konfiguration,
+  Standby-Status, OLED und die drei Bonnet-Taster prüfen und bis zum Abbruch
+  weiterlaufen.
 - Standardprofil MUSS 868,1 MHz, SF7, BW125, CR 4/5, Payload-CRC, Syncword `0x34` und 14 dBm verwenden.
 - Frequenzen außerhalb 863 bis 870 MHz MÜSSEN abgelehnt werden.
 - Sendeleistungen außerhalb 2 bis 14 dBm MÜSSEN abgelehnt werden.

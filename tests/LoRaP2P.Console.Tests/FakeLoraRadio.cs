@@ -14,13 +14,21 @@ internal sealed class FakeLoraRadio : ILoraRadio
 
     public int ResetCount { get; private set; }
 
+    public int ProbeCount { get; private set; }
+
+    public int StatusCount { get; private set; }
+
     public Task ResetAsync(CancellationToken cancellationToken = default)
     {
         ResetCount++;
         return Task.CompletedTask;
     }
 
-    public Task<byte> ProbeAsync(CancellationToken cancellationToken = default) => Task.FromResult((byte)0x12);
+    public Task<byte> ProbeAsync(CancellationToken cancellationToken = default)
+    {
+        ProbeCount++;
+        return Task.FromResult((byte)0x12);
+    }
 
     public Task ConfigureAsync(RadioConfiguration configuration, CancellationToken cancellationToken = default)
     {
@@ -42,6 +50,7 @@ internal sealed class FakeLoraRadio : ILoraRadio
 
     public Task<RadioStatus> GetStatusAsync(CancellationToken cancellationToken = default)
     {
+        StatusCount++;
         return Task.FromResult(new RadioStatus(0x12, RadioMode.Standby, 0, Configuration));
     }
 
