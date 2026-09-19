@@ -192,8 +192,8 @@ flowchart TD
 ### Ohne Hardware
 
 - `dotnet restore` ist erfolgreich.
-- `dotnet build LoRaP2P.sln --configuration Release` ist ohne Warnungen erfolgreich.
-- `dotnet test LoRaP2P.sln --configuration Release` führt alle NUnit-Tests erfolgreich aus.
+- `dotnet build LoRaP2P.slnx --configuration Release` ist ohne Warnungen erfolgreich.
+- `dotnet test LoRaP2P.slnx --configuration Release` führt alle NUnit-Tests erfolgreich aus.
 - Kommando-Parsing und alle Verben sind ohne Funkhardware getestet.
 - Frequenzkonvertierung, EU868-Validierung, Time-on-Air, Registerkonfiguration, TX, RX und Reset/Probe sind getestet.
 - `linux-arm64` Self-contained Publish ist erfolgreich.

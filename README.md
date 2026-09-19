@@ -40,8 +40,8 @@ Voraussetzung auf dem Entwicklungsrechner: .NET SDK 10.
 
 ```powershell
 dotnet restore
-dotnet build LoRaP2P.sln --configuration Release
-dotnet test LoRaP2P.sln --configuration Release
+dotnet build LoRaP2P.slnx --configuration Release
+dotnet test LoRaP2P.slnx --configuration Release
 ```
 
 Die Tests verwenden NUnit, einen Fake-Registertransport und ein Fake-Radio. Sie benötigen keine Funkhardware.
