@@ -132,6 +132,12 @@ mitgelieferte `p2p.json` konfiguriert zunächst die lokale ID 1 und keine Peers.
 direkt adressierte Frames. Die aktuelle P2P-Version ist weder authentifiziert
 noch verschlüsselt; AES-GCM ist als spätere Ausbaustufe geplant.
 
+Im Normalbetrieb zeigt das OLED empfangene Broadcast-Texte ohne zusätzliche
+Statuszeile an. Der Text wird auf vier Zeilen mit jeweils bis zu 21 Zeichen
+umgebrochen. Längere Nachrichten scrollen einmal zeilenweise nach oben; danach
+bleibt die letzte Seite stehen. Eine neue Broadcast-Nachricht ersetzt die
+laufende Anzeige. Nicht unterstützte Zeichen werden als `?` dargestellt.
+
 Beim ersten Versand oder Empfang öffnet die Anwendung je lokaler ID und
 Gegenstelle eine JSONL-Sitzungsdatei unter `~/LoRaP2P/sessions`. Jede Zeile
 enthält genau ein JSON-Objekt mit Zeitstempel, Richtung, IDs, Sequenznummer,

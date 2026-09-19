@@ -14,6 +14,7 @@ flowchart TD
     SESSION[P2pConsoleSession]
     LOG[P2pSessionLog]
     EXPORT[P2pChatExporter]
+    DISPLAY[Radio-Bonnet OLED]
     JSONL[JSONL-Sitzungsdateien]
     HTML[Eigenständige HTML-Chatansicht]
     NODE[P2pNode]
@@ -34,6 +35,7 @@ flowchart TD
 
     SESSION --> NODE
     SESSION --> LOG
+    SESSION -->|empfangene Broadcasts| DISPLAY
     LOG --> JSONL
     EXPORT --> JSONL
     EXPORT --> HTML
@@ -144,6 +146,15 @@ Broadcasts verwenden eine eigene Pseudo-Gegenstelle.
 jedes JSON-Objekt und erzeugt atomar eine eigenständige HTML-Datei. Dynamische
 Inhalte werden HTML-kodiert; externe Skripte, Schriften oder Stylesheets
 werden nicht geladen.
+
+### Radio-Bonnet-Display
+
+Im Normalbetrieb leitet `P2pConsoleSession` ausschließlich neu empfangene
+Broadcast-Nutzdaten an das OLED weiter. Die Darstellung ist vom Funkempfang
+entkoppelt, damit eine laufende Anzeige keine weiteren Frames blockiert.
+`RadioBonnetTextLayout` bricht Text auf 21 Zeichen pro Zeile um. Bei mehr als
+vier Zeilen verschiebt ein Hintergrundtask die Anzeige einmal zeilenweise bis
+zur letzten Seite. Eine neue Nachricht bricht den vorherigen Durchlauf ab.
 
 ## 4. Sendeablauf
 

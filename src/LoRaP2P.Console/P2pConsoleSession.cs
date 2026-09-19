@@ -1,3 +1,4 @@
+using System.Text;
 using LoRaP2P.Protocol;
 using LoRaP2P.Protocol.Frames;
 using LoRaP2P.Protocol.Peers;
@@ -7,16 +8,22 @@ namespace LoRaP2P.Console;
 
 internal sealed class P2pConsoleSession : IDisposable
 {
+    private static readonly UTF8Encoding StrictUtf8 = new(
+        encoderShouldEmitUTF8Identifier: false,
+        throwOnInvalidBytes: true);
+
     private readonly ILoraRadio _radio;
     private readonly P2pConfigurationStore _store;
     private readonly P2pSessionLog _sessionLog;
+    private readonly IRadioBonnetDisplay? _display;
     private P2pNode _node;
 
     public P2pConsoleSession(
         ILoraRadio radio,
         P2pConfiguration configuration,
         P2pConfigurationStore store,
-        P2pSessionLog? sessionLog = null)
+        P2pSessionLog? sessionLog = null,
+        IRadioBonnetDisplay? display = null)
     {
         ArgumentNullException.ThrowIfNull(radio);
         ArgumentNullException.ThrowIfNull(configuration);
@@ -26,6 +33,7 @@ internal sealed class P2pConsoleSession : IDisposable
         _radio = radio;
         _store = store;
         _sessionLog = sessionLog ?? new P2pSessionLog();
+        _display = display;
         Configuration = configuration;
         _node = CreateNode(configuration);
         _node.DataReceived += HandleDataReceived;
@@ -131,8 +139,26 @@ internal sealed class P2pConsoleSession : IDisposable
         _sessionLog.Dispose();
     }
 
-    private void HandleDataReceived(P2pReceivedMessage message) =>
+    private void HandleDataReceived(P2pReceivedMessage message)
+    {
         _sessionLog.AppendReceived(_node.LocalNodeId, message);
+        if (message.Recipient.IsBroadcast && _display is not null)
+        {
+            _display.ShowBroadcastMessage(GetDisplayText(message.Payload));
+        }
+    }
+
+    private static string GetDisplayText(byte[] payload)
+    {
+        try
+        {
+            return StrictUtf8.GetString(payload);
+        }
+        catch (DecoderFallbackException)
+        {
+            return Convert.ToHexString(payload);
+        }
+    }
 
     private P2pNode CreateNode(P2pConfiguration configuration) =>
         new(

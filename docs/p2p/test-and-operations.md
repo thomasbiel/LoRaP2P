@@ -92,6 +92,12 @@ broadcast text "hello all"
 Broadcast meldet nur den lokalen `TxDone`-Abschluss und weist ausdrücklich
 darauf hin, dass kein ACK erwartet wird.
 
+Empfangene Broadcast-Texte erscheinen zusätzlich auf dem OLED. Es stehen vier
+Zeilen mit jeweils bis zu 21 Zeichen zur Verfügung. Längere Nachrichten
+scrollen einmal im Abstand von einer Sekunde zeilenweise nach oben und lassen
+die letzte Seite sichtbar. Eine neue Broadcast-Nachricht ersetzt die laufende
+Anzeige. Direkt adressierte Nachrichten verändern das OLED nicht.
+
 ### Statistik
 
 ```text
@@ -195,6 +201,9 @@ Zeilennummer eines ungültigen JSON-Objekts.
 - ungültige IDs und Hexdaten erzeugen verständliche Fehler,
 - Ausgaben unterscheiden `TxDone`, ACK und Zustellfehler,
 - `peers` und `stats` bilden den Dienstzustand korrekt ab.
+- nur Broadcasts werden an die OLED-Anzeige weitergereicht,
+- explizite Zeilenumbrüche, Wortumbruch und lange Wörter werden korrekt auf
+  21 Zeichen breite Displayzeilen verteilt,
 - Senden, Empfang und Broadcast erzeugen die erwarteten JSONL-Sitzungen,
 - der Export funktioniert mit Standard- und explizitem Zielpfad,
 - fehlerhafte JSON-Zeilen werden mit Zeilennummer abgelehnt,

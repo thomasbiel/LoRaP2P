@@ -59,7 +59,12 @@ internal static class Program
             var p2pStore = new P2pConfigurationStore(options.ResolvePeerConfigurationPath());
             var p2pConfiguration = await p2pStore.LoadAsync(cancellationToken)
                 ?? new P2pConfiguration { LocalNodeId = new P2pNodeId(1) };
-            using var p2p = new P2pConsoleSession(radio, p2pConfiguration, p2pStore);
+            using var bonnet = new SystemRadioBonnetCheckUi();
+            using var p2p = new P2pConsoleSession(
+                radio,
+                p2pConfiguration,
+                p2pStore,
+                display: bonnet);
 
             System.Console.WriteLine($"RFM95 detected (version 0x{version:X2}). Raw LoRa EU868 console ready.");
             System.Console.WriteLine("Enter 'help' for commands. Ctrl+C exits safely.");

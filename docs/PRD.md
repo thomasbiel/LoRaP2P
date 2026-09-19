@@ -189,6 +189,7 @@ flowchart TD
     SESSION --> P2P_NODE[P2pNode]
     SESSION --> P2P_CONFIG
     SESSION --> SESSION_LOG[P2pSessionLog / JSONL]
+    SESSION --> BONNET_API
     VERBS --> EXPORT[P2pChatExporter / HTML]
     P2P_NODE --> CODEC[P2pFrameCodec]
     P2P_NODE --> PEERS[PeerRegistry]
@@ -335,6 +336,13 @@ Die Konsole enthält folgende Befehle:
 | `peers` | Bekannte Geräte und letzte Empfangswerte anzeigen |
 | `stats` | TX, RX, ACKs, Retries, Timeouts, Duplikate und CRC-Fehler anzeigen |
 | `export-chat <session.jsonl> [output.html]` | Persistierte Sitzung als eigenständige HTML-Chatansicht exportieren |
+
+Im Normalbetrieb MÜSSEN empfangene Broadcast-Texte ohne Funkstatus auf dem
+128×32-OLED erscheinen. Die Anzeige verwendet vier Zeilen mit jeweils bis zu
+21 Zeichen. Längere Texte scrollen einmal zeilenweise nach oben und lassen
+anschließend die letzte Seite stehen. Eine neu empfangene Broadcast-Nachricht
+ersetzt eine noch laufende Anzeige. Direkt adressierte Nachrichten werden
+nicht auf dem OLED dargestellt.
 
 Gesendete und empfangene Nutzdaten MÜSSEN pro Kombination aus lokaler
 Geräte-ID und Gegenstelle in einer JSONL-Datei persistiert werden. Die Datei

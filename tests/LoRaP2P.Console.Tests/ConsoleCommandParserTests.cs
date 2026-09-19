@@ -14,6 +14,7 @@ internal sealed class ConsoleCommandParserTests : IAsyncDisposable
     private ConsoleCommandParser _parser = null!;
     private CommandContext _context = null!;
     private P2pConsoleSession _p2p = null!;
+    private TestRadioBonnetDisplay _display = null!;
     private string _p2pPath = null!;
     private string _sessionsPath = null!;
 
@@ -35,11 +36,13 @@ internal sealed class ConsoleCommandParserTests : IAsyncDisposable
             LocalNodeId = new P2pNodeId(1),
             Peers = [new P2pNodeId(2)]
         };
+        _display = new TestRadioBonnetDisplay();
         _p2p = new P2pConsoleSession(
             _radio,
             p2pConfiguration,
             new P2pConfigurationStore(_p2pPath),
-            new P2pSessionLog(_sessionsPath));
+            new P2pSessionLog(_sessionsPath),
+            _display);
         _context = new CommandContext(_radio, new RadioConfiguration(), _p2p, _output);
     }
 
@@ -244,6 +247,26 @@ internal sealed class ConsoleCommandParserTests : IAsyncDisposable
         Assert.That(
             ReadSessionText(Directory.GetFiles(_sessionsPath, "*.jsonl").Single()),
             Does.Contain("\"direction\":\"incoming\""));
+        Assert.That(_display.Message, Is.Null);
+    }
+
+    [Test]
+    public void ParseAndExecuteAsync_Listen_DisplaysBroadcastText()
+    {
+        using CancellationTokenSource cancellation = new();
+        var frame = P2pFrame.CreateData(
+            new P2pNodeId(2),
+            P2pAddress.Broadcast,
+            8,
+            "hello display"u8);
+        _radio.QueueReceivedPacket(
+            new ReceivedPacket(P2pFrameCodec.Encode(frame), true, -72, 3.5),
+            cancellation.Cancel);
+
+        Assert.CatchAsync<OperationCanceledException>(
+            async () => await _parser.ParseAndExecuteAsync("listen", _context, cancellation.Token));
+
+        Assert.That(_display.Message, Is.EqualTo("hello display"));
     }
 
     [Test]
@@ -291,5 +314,15 @@ internal sealed class ConsoleCommandParserTests : IAsyncDisposable
         using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
         using var reader = new StreamReader(stream);
         return reader.ReadToEnd();
+    }
+
+    private sealed class TestRadioBonnetDisplay : IRadioBonnetDisplay
+    {
+        public string? Message { get; private set; }
+
+        public void ShowBroadcastMessage(string message)
+        {
+            Message = message;
+        }
     }
 }
