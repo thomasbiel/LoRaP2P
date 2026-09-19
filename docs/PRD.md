@@ -176,15 +176,35 @@ Eine generische Register-Schreibfunktion ist absichtlich nicht Teil des normalen
 
 ```mermaid
 flowchart TD
-    CLI[LoRaP2P.Console] --> VERBS[CommandLineParser-Verben]
+    PROGRAM[Program / StartupOptions]
+
+    PROGRAM -->|normaler Start| CLI[InteractiveConsole]
+    PROGRAM -->|--check| CHECK[RadioHardwareCheck]
+
+    CLI --> PARSER[ConsoleCommandParser]
+    PARSER --> VERBS[CommandLineParser-Verben]
     VERBS --> API[ILoraRadio]
+    CHECK --> API
+    CHECK --> BONNET_API[IRadioBonnetCheckUi]
+
     API --> RADIO[Rfm9xRadio]
     RADIO --> PORT[IRfm9xRegisterTransport]
+
     PORT --> PI[SystemDeviceRfm9xTransport]
-    PORT --> FAKE[FakeRfm9xRegisterTransport]
-    PI --> SPI[SPI0 CE1]
-    PI --> GPIO[GPIO25 und GPIO22]
-    FAKE --> TESTS[NUnit Tests]
+    PORT --> FAKE_TRANSPORT[FakeRfm9xRegisterTransport]
+
+    PI --> SPI[SPI0 / CE1]
+    PI --> RESET[GPIO25 / Reset]
+    PI -->|normaler Betrieb| DIO0[GPIO22 / DIO0]
+
+    BONNET_API --> BONNET[SystemRadioBonnetCheckUi]
+    BONNET --> OLED[SSD1306 über I2C1]
+    BONNET --> DISPLAY_RESET[GPIO4 / Display-Reset]
+    BONNET --> BUTTONS[GPIO5, GPIO6, GPIO12]
+
+    FAKE_RADIO[FakeLoraRadio] --> CONSOLE_TESTS[Console-Tests]
+    FAKE_BONNET[Fake Bonnet UI] --> CONSOLE_TESTS
+    FAKE_TRANSPORT --> RADIO_TESTS[Radio-Tests]
 ```
 
 ## 10. Akzeptanzkriterien
