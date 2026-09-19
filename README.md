@@ -5,7 +5,7 @@
 > Der aktuelle Stand ist Raw LoRa, nicht LoRaWAN. `TxDone` bestätigt nur, dass der RFM95 den Sendevorgang beendet hat.
 
 Das vollständige Produktkonzept steht in [docs/PRD.md](docs/PRD.md).
-Die geplante P2P-Ausbaustufe ist unter
+Die P2P-Ausbaustufe ist unter
 [docs/p2p/README.md](docs/p2p/README.md) spezifiziert.
 
 ## Hardware
@@ -71,6 +71,12 @@ Alternative Konfiguration:
 ./LoRaP2P.Console --config /etc/LoRaP2P/radio.json
 ```
 
+Alternative P2P-Konfiguration:
+
+```bash
+./LoRaP2P.Console --peer-config /var/lib/lorap2p/p2p.json
+```
+
 Grundlegende Verdrahtung, Funkhardware, OLED und Taster prüfen:
 
 ```bash
@@ -99,18 +105,57 @@ send hex DEADBEEF
 receive 10
 register read 0x42
 register dump
+peer id 1
+peer add 2
+listen
+send-to 2 text "hello peer"
+send-to 2 hex DEADBEEF
+broadcast text "hello all"
+peers
+stats
+export-chat /home/pi/LoRaP2P/sessions/session.jsonl
+export-chat /home/pi/LoRaP2P/sessions/session.jsonl /home/pi/chat.html
 quit
 ```
 
 Mit einem einzelnen Bonnet lassen sich SPI, Register, Modemkonfiguration, FIFO und `TxDone` prüfen. Für einen echten Empfangstest wird ein zweiter kompatibler RFM9x-Transceiver mit identischem Funkprofil benötigt.
+
+## Raw-LoRa-P2P
+
+Die adressierte P2P-Kommunikation verwendet versionierte Binärframes,
+16-Bit-Geräte-IDs, ACKs, maximal drei Retries und zufälligen Backoff. Das
+mitgelieferte `p2p.json` konfiguriert zunächst die lokale ID 1 und keine Peers.
+`peer id` und `peer add` speichern Änderungen atomar in dieser Datei.
+
+`send-to` meldet eine Zustellung erst nach einem passenden Peer-ACK.
+`broadcast` erwartet kein ACK. `listen` läuft bis Ctrl+C und bestätigt gültige
+direkt adressierte Frames. Die aktuelle P2P-Version ist weder authentifiziert
+noch verschlüsselt; AES-GCM ist als spätere Ausbaustufe geplant.
+
+Beim ersten Versand oder Empfang öffnet die Anwendung je lokaler ID und
+Gegenstelle eine JSONL-Sitzungsdatei unter `~/LoRaP2P/sessions`. Jede Zeile
+enthält genau ein JSON-Objekt mit Zeitstempel, Richtung, IDs, Sequenznummer,
+Text- und Hexdarstellung sowie Zustell- oder Empfangsstatus. Die Datei bleibt
+bis zum Prozessende geöffnet. Broadcasts werden in einer separaten
+`peerbroadcast`-Sitzung gespeichert.
+
+`export-chat <session.jsonl> [output.html]` erzeugt daraus eine eigenständige
+HTML-Datei mit Chatblasen. Ohne Ausgabepfad liegt sie neben der JSONL-Datei.
+Der Export kann auch ausgeführt werden, solange die Sitzung noch geschrieben
+wird.
+
+Wire-Format, Architektur, Betrieb und Tests sind unter
+[docs/p2p/README.md](docs/p2p/README.md) dokumentiert.
 
 ## Projektstruktur
 
 ```text
 src/LoRaP2P.Console/Commands    CommandLineParser-Verben der interaktiven Konsole
 src/LoRaP2P.Console             Konfiguration und Anwendungskomposition
+src/LoRaP2P.Protocol            P2P-Frames, ACKs, Retries, Peers und Statistiken
 src/LoRaP2P.Radio.Rfm9x         Hardwaretransport und SX1276/RFM95-Treiber
 tests/LoRaP2P.Console.Tests     Hardwarefreie Tests der Kommandoverarbeitung
+tests/LoRaP2P.Protocol.Tests    Hardwarefreie Tests des P2P-Protokolls
 tests/LoRaP2P.Radio.Rfm9x.Tests Hardwarefreie Tests des Radiotreibers
 docs/PRD.md                     Produktanforderungen und Ausbaustufen
 ```

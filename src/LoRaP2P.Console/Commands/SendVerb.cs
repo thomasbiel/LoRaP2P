@@ -1,4 +1,3 @@
-using System.Text;
 using CommandLine;
 
 namespace LoRaP2P.Console.Commands;
@@ -14,12 +13,7 @@ internal sealed class SendVerb : IConsoleVerb
 
     public async Task<CommandOutcome> ExecuteAsync(CommandContext context, CancellationToken cancellationToken)
     {
-        var payload = this.Format.ToLowerInvariant() switch
-        {
-            "text" => Encoding.UTF8.GetBytes(string.Join(' ', this.PayloadParts)),
-            "hex" => Convert.FromHexString(string.Concat(this.PayloadParts)),
-            _ => throw new FormatException("Format must be text or hex.")
-        };
+        var payload = CommandPayloadParser.Parse(this.Format, this.PayloadParts);
 
         var result = await context.Radio.TransmitAsync(payload, cancellationToken);
         await context.Output.WriteLineAsync($"TxDone: {payload.Length} bytes, time-on-air {result.TimeOnAir.TotalMilliseconds:F1} ms.");

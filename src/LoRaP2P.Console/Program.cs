@@ -1,6 +1,8 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using CommandLine;
+using LoRaP2P.Protocol;
+using LoRaP2P.Protocol.Frames;
 using LoRaP2P.Radio.Rfm9x;
 using LoRaP2P.Radio.Rfm9x.Transport;
 
@@ -30,7 +32,7 @@ internal static class Program
             settings.CaseSensitive = false;
             settings.HelpWriter = System.Console.Error;
         });
-        
+
         var parseResult = parser.ParseArguments<StartupOptions>(args);
         return await parseResult.MapResult(options => RunAsync(options, shutdown.Token), HandleParseErrors);
     }
@@ -54,11 +56,17 @@ internal static class Program
             var version = await radio.ProbeAsync(cancellationToken);
             await radio.ConfigureAsync(configuration, cancellationToken);
 
+            var p2pStore = new P2pConfigurationStore(options.ResolvePeerConfigurationPath());
+            var p2pConfiguration = await p2pStore.LoadAsync(cancellationToken)
+                ?? new P2pConfiguration { LocalNodeId = new P2pNodeId(1) };
+            using var p2p = new P2pConsoleSession(radio, p2pConfiguration, p2pStore);
+
             System.Console.WriteLine($"RFM95 detected (version 0x{version:X2}). Raw LoRa EU868 console ready.");
             System.Console.WriteLine("Enter 'help' for commands. Ctrl+C exits safely.");
             return await InteractiveConsole.RunAsync(
                 radio,
                 configuration,
+                p2p,
                 System.Console.In,
                 System.Console.Out,
                 System.Console.Error,
@@ -120,7 +128,7 @@ internal static class Program
             stream,
             JsonOptions,
             cancellationToken);
-        
+
         return configuration ?? throw new JsonException("Configuration file contains no radio configuration.");
     }
 

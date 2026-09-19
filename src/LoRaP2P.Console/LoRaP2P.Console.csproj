@@ -4,11 +4,18 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\LoRaP2P.Protocol\LoRaP2P.Protocol.csproj" />
     <ProjectReference Include="..\LoRaP2P.Radio.Rfm9x\LoRaP2P.Radio.Rfm9x.csproj" />
   </ItemGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="Resources\P2pChatTemplate.html">
+      <LogicalName>LoRaP2P.Console.Resources.P2pChatTemplate.html</LogicalName>
+    </EmbeddedResource>
     <None Update="appsettings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="p2p.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>

@@ -180,10 +180,20 @@ flowchart TD
 
     PROGRAM -->|normaler Start| CLI[InteractiveConsole]
     PROGRAM -->|--check| CHECK[RadioHardwareCheck]
+    PROGRAM --> P2P_CONFIG[P2pConfigurationStore]
 
     CLI --> PARSER[ConsoleCommandParser]
     PARSER --> VERBS[CommandLineParser-Verben]
     VERBS --> API[ILoraRadio]
+    VERBS --> SESSION[P2pConsoleSession]
+    SESSION --> P2P_NODE[P2pNode]
+    SESSION --> P2P_CONFIG
+    SESSION --> SESSION_LOG[P2pSessionLog / JSONL]
+    VERBS --> EXPORT[P2pChatExporter / HTML]
+    P2P_NODE --> CODEC[P2pFrameCodec]
+    P2P_NODE --> PEERS[PeerRegistry]
+    P2P_NODE --> STATS[P2pStatistics]
+    P2P_NODE --> API
     CHECK --> API
     CHECK --> BONNET_API[IRadioBonnetCheckUi]
 
@@ -246,7 +256,15 @@ flowchart TD
 
 ## 12. Raw-LoRa-Zwei-Wege-Kommunikation
 
-Nach erfolgreichem bidirektionalem Funkgerätetest wird ein kleines P2P-Protokoll oberhalb von `ILoraRadio` implementiert. Zwei Raspberry Pis mit jeweils einem kompatiblen RFM9x-Transceiver kommunizieren direkt miteinander. Gateway, Network Server, Internetverbindung und LoRaWAN-Provisionierung werden dafür nicht benötigt.
+Ein kleines P2P-Protokoll oberhalb von `ILoraRadio` ermöglicht die direkte
+Kommunikation zwischen zwei Raspberry Pis mit jeweils einem kompatiblen
+RFM9x-Transceiver. Gateway, Network Server, Internetverbindung und
+LoRaWAN-Provisionierung werden dafür nicht benötigt.
+
+**Implementierungsstatus:** Protokollkern, Persistenz, Konsolenbefehle und
+hardwarefreie Tests sind implementiert. Die bidirektionale Hardwareabnahme mit
+zwei RFM9x-Geräten ist noch offen. Die optionale AES-GCM-Ausbaustufe ist nicht
+implementiert.
 
 Die konkretisierte Spezifikation, Zielarchitektur, Umsetzungsschritte sowie
 Test- und Betriebsplanung stehen unter
@@ -304,7 +322,7 @@ Unverschlüsselter Betrieb bleibt für lokale Funk- und Reichweitentests möglic
 
 ### 12.6 Konsolenfunktionen
 
-Die Konsole wird um folgende Befehle erweitert:
+Die Konsole enthält folgende Befehle:
 
 | Befehl | Verhalten |
 | --- | --- |
@@ -316,6 +334,16 @@ Die Konsole wird um folgende Befehle erweitert:
 | `broadcast text <value>` | Nachricht ohne ACK an alle Empfänger senden |
 | `peers` | Bekannte Geräte und letzte Empfangswerte anzeigen |
 | `stats` | TX, RX, ACKs, Retries, Timeouts, Duplikate und CRC-Fehler anzeigen |
+| `export-chat <session.jsonl> [output.html]` | Persistierte Sitzung als eigenständige HTML-Chatansicht exportieren |
+
+Gesendete und empfangene Nutzdaten MÜSSEN pro Kombination aus lokaler
+Geräte-ID und Gegenstelle in einer JSONL-Datei persistiert werden. Die Datei
+wird bei der ersten Nachricht geöffnet, bis zum Prozessende weitergeführt und
+standardmäßig unter `~/LoRaP2P/sessions` abgelegt. Jede Zeile enthält genau
+eine Nachricht mit Zeitstempel, Richtung, IDs, Sequenznummer, Text- und
+Hexdarstellung sowie Empfangs- oder Zustellstatus. Broadcasts werden in einer
+eigenen Broadcast-Sitzung gespeichert. Der HTML-Export MUSS ohne externe
+Ressourcen auskommen und Nachrichteninhalte vor der Ausgabe HTML-kodieren.
 
 ### 12.7 Akzeptanzkriterien
 
@@ -326,6 +354,8 @@ Die Konsole wird um folgende Befehle erweitert:
 - Nach ausgeschöpfter Retry-Grenze meldet der Sender einen nachvollziehbaren Zustellfehler.
 - Gleichzeitige Sendeversuche werden durch zufälligen Backoff aufgelöst.
 - Duty-Cycle-Grenzen gelten für Datenframes, ACKs und Retries.
+- Gesendete, empfangene und fehlgeschlagene Nachrichten werden im
+  dokumentierten JSONL-Format persistiert und lassen sich als HTML exportieren.
 - Bei aktivierter Verschlüsselung werden manipulierte Frames und wiederverwendete Nonces abgelehnt.
 - Alle Frame-, ACK-, Retry-, Duplikat- und Kryptografiefälle sind mit NUnit ohne Funkhardware getestet.
 

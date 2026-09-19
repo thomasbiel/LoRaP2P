@@ -7,17 +7,24 @@ internal sealed class ConsoleCommandParser : IDisposable
 {
     private static readonly Type[] VerbTypes =
     [
+        typeof(BroadcastVerb),
         typeof(ConfigureVerb),
         typeof(ExitVerb),
+        typeof(ExportChatVerb),
+        typeof(ListenVerb),
+        typeof(PeersVerb),
+        typeof(PeerVerb),
         typeof(ProbeVerb),
         typeof(QuitVerb),
         typeof(ReceiveVerb),
         typeof(RegisterVerb),
         typeof(ResetVerb),
         typeof(SendVerb),
+        typeof(SendToVerb),
+        typeof(StatsVerb),
         typeof(StatusVerb)
     ];
-    
+
     private readonly Parser _parser;
 
     public ConsoleCommandParser(TextWriter error)

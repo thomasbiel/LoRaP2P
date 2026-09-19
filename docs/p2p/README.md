@@ -1,9 +1,11 @@
 # P2P-Ausbaustufe
 
-Dieses Verzeichnis konkretisiert die geplante Raw-LoRa-Zwei-Wege-Kommunikation
+Dieses Verzeichnis konkretisiert die Raw-LoRa-Zwei-Wege-Kommunikation
 aus [Abschnitt 12 des PRD](../PRD.md#12-raw-lora-zwei-wege-kommunikation).
-Die Dokumente beschreiben ein Folge-Release und keinen bereits implementierten
-Funktionsumfang.
+
+Protokollkern, Persistenz, Konsolenbefehle und hardwarefreie Tests sind
+implementiert. Offen sind die bidirektionale Hardwareabnahme mit zwei Geräten
+und die optionale AES-GCM-Ausbaustufe.
 
 ## Ziel
 
@@ -27,6 +29,8 @@ erforderlich.
 | Backoff | zufällig 250 bis 1000 ms |
 | ACK-Wartezeit des Empfängers | 100 ms |
 | Peer-Konfiguration | separate persistente JSON-Datei ohne Geheimnisse |
+| Nachrichtenpersistenz | JSONL je lokaler ID und Gegenstelle unter `~/LoRaP2P/sessions` |
+| Chat-Export | eigenständiges HTML über `export-chat` |
 | `listen` beenden | Strg+C beendet die gesamte Anwendung |
 | Verschlüsselung | separate spätere Phase; erstes P2P-Release unverschlüsselt |
 
@@ -53,6 +57,7 @@ Enthalten:
 - Duplikatunterdrückung,
 - Peer-Registry und Sitzungsstatistiken,
 - sämtliche Befehle aus PRD 12.6,
+- JSONL-Sitzungspersistenz und HTML-Chat-Export,
 - hardwarefreie NUnit-Tests,
 - bidirektionale Abnahme mit zwei RFM9x-Geräten.
 
@@ -65,4 +70,3 @@ Nicht enthalten:
 - persistente Nachrichtenwarteschlangen,
 - automatische Peer-Erkennung,
 - AES-GCM im ersten P2P-Release.
-

@@ -5,17 +5,18 @@
 Die Phasen bauen aufeinander auf. Eine Phase gilt erst als abgeschlossen,
 wenn ihre Tests und Dokumentationsänderungen enthalten sind.
 
-| Phase | Ergebnis | Abhängigkeit |
+| Phase | Ergebnis | Status |
 | ---: | --- | --- |
-| 0 | Bidirektionaler Raw-LoRa-Basistest | Version 1 |
-| 1 | Projektgerüst und Protokollmodelle | Phase 0 |
-| 2 | Frame-Codec | Phase 1 |
-| 3 | Konfiguration, Peers und Statistiken | Phase 1 |
-| 4 | Empfang, ACK und Duplikate | Phasen 2–3 |
-| 5 | Zuverlässiges Senden und Broadcast | Phase 4 |
-| 6 | Konsolenbefehle aus PRD 12.6 | Phase 5 |
-| 7 | Systemtest, Dokumentation und Release | Phase 6 |
-| 8 | Optionale AES-GCM-Erweiterung | separates Folge-Release |
+| 0 | Bidirektionaler Raw-LoRa-Basistest | Offen |
+| 1 | Projektgerüst und Protokollmodelle | Implementiert |
+| 2 | Frame-Codec | Implementiert |
+| 3 | Konfiguration, Peers und Statistiken | Implementiert |
+| 4 | Empfang, ACK und Duplikate | Implementiert |
+| 5 | Zuverlässiges Senden und Broadcast | Implementiert |
+| 6 | Konsolenbefehle aus PRD 12.6 | Implementiert |
+| 7 | JSONL-Sitzungspersistenz und HTML-Export | Implementiert |
+| 8 | Systemtest, Dokumentation und Release | Software validiert, Hardware offen |
+| 9 | Optionale AES-GCM-Erweiterung | Geplant |
 
 ## Phase 0: Hardwarebasis bestätigen
 
@@ -144,7 +145,25 @@ Abschlusskriterium:
 - Jeder neue Befehl besitzt mindestens einen Erfolgs- und einen Fehlerfall.
 - Bestehende Version-1-Befehle verhalten sich unverändert.
 
-## Phase 7: Systemtest und Release
+## Phase 7: JSONL-Sitzungspersistenz und HTML-Export
+
+Aufgaben:
+
+- je lokaler ID und Gegenstelle beim ersten Versand oder Empfang eine
+  append-only JSONL-Datei öffnen,
+- eingehende, bestätigte, fehlgeschlagene und Broadcast-Nachrichten erfassen,
+- alle Writer beim Prozessende schließen,
+- Standardpfad `~/LoRaP2P/sessions` verwenden,
+- `export-chat <session.jsonl> [output.html]` implementieren,
+- selbstständiges HTML mit kodierten Nutzdaten atomar schreiben,
+- Persistenz, Export, ungültige Eingaben und HTML-Kodierung testen.
+
+Abschlusskriterium:
+
+- JSONL-Dateien können während der laufenden Sitzung exportiert werden.
+- Eine Nachricht entspricht genau einem validierten JSON-Objekt pro Zeile.
+
+## Phase 8: Systemtest und Release
 
 Aufgaben:
 
@@ -162,7 +181,7 @@ Abschlusskriterium:
 - Sämtliche Kriterien aus PRD 12.7 sind erfüllt oder explizit als
   hardwarebedingt offen dokumentiert.
 
-## Phase 8: AES-GCM als Folge-Release
+## Phase 9: AES-GCM als Folge-Release
 
 Diese Phase beginnt erst nach Abnahme des unverschlüsselten P2P-Protokolls.
 Details stehen in [security.md](security.md).
@@ -178,4 +197,3 @@ Ein Arbeitspaket ist fertig, wenn:
 - README, PRD und P2P-Dokumente konsistent sind,
 - bei Plattformänderungen das `linux-arm64`-Publish erfolgreich ist,
 - Hardwaretests mit Datum, Geräten und Funkprofil protokolliert sind.
-

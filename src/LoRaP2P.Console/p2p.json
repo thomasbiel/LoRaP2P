@@ -1,0 +1,11 @@
+{
+  "LocalNodeId": 1,
+  "Peers": [],
+  "AckTimeout": "00:00:02",
+  "MaxRetries": 3,
+  "BackoffMinimum": "00:00:00.250",
+  "BackoffMaximum": "00:00:01",
+  "AckTurnaroundDelay": "00:00:00.100",
+  "DuplicateWindow": "00:10:00",
+  "DuplicateEntriesPerPeer": 64
+}

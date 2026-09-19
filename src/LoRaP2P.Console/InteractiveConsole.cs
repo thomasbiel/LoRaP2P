@@ -1,4 +1,6 @@
 using LoRaP2P.Console.Commands;
+using LoRaP2P.Protocol;
+using LoRaP2P.Protocol.Frames;
 using LoRaP2P.Radio.Rfm9x;
 
 namespace LoRaP2P.Console;
@@ -8,13 +10,14 @@ internal static class InteractiveConsole
     public static async Task<int> RunAsync(
         ILoraRadio radio,
         RadioConfiguration initialConfiguration,
+        P2pConsoleSession p2p,
         TextReader input,
         TextWriter output,
         TextWriter error,
         CancellationToken cancellationToken)
     {
         using ConsoleCommandParser parser = new(error);
-        CommandContext context = new(radio, initialConfiguration, output);
+        CommandContext context = new(radio, initialConfiguration, p2p, output);
 
         while (!cancellationToken.IsCancellationRequested)
         {
@@ -52,6 +55,12 @@ internal static class InteractiveConsole
     private static bool IsExpectedCommandException(Exception exception) =>
         exception is ArgumentException
             or FormatException
+            or InvalidDataException
+            or InvalidOperationException
+            or IOException
+            or UnauthorizedAccessException
+            or P2pDeliveryException
+            or P2pProtocolException
             or Rfm9xException
             or TimeoutException;
 }

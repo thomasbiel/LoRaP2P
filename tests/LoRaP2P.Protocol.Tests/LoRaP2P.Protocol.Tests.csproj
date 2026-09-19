@@ -14,7 +14,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\LoRaP2P.Console\LoRaP2P.Console.csproj" />
     <ProjectReference Include="..\..\src\LoRaP2P.Protocol\LoRaP2P.Protocol.csproj" />
   </ItemGroup>
 </Project>

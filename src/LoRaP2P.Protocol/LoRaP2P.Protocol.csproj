@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="..\LoRaP2P.Radio.Rfm9x\LoRaP2P.Radio.Rfm9x.csproj" />
+  </ItemGroup>
+</Project>

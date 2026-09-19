@@ -101,7 +101,42 @@ stats
 Statistiken gelten für die aktuelle Prozesssitzung und werden nicht
 persistiert. Ein Reset-Befehl ist im ersten P2P-Release nicht vorgesehen.
 
-## 3. Unit-Testmatrix
+## 3. Nachrichtenpersistenz und Chat-Export
+
+Beim ersten Versand oder Empfang wird je Kombination aus lokaler Geräte-ID und
+Gegenstelle eine Datei im Standardverzeichnis `~/LoRaP2P/sessions` geöffnet.
+Die Writer bleiben bis zum Prozessende offen und schreiben UTF-8 ohne BOM.
+Dateien können währenddessen gelesen und exportiert werden. Broadcasts werden
+getrennt in einer Datei mit `peerbroadcast` im Namen geführt.
+
+Dateinamen folgen dem Muster
+`yyyyMMddTHHmmssfffZ-node<local>-peer<peer>.jsonl`; bei einer Kollision wird
+ein numerischer Suffix ergänzt. Jede nichtleere Zeile enthält genau ein
+JSON-Objekt:
+
+| Feld | Bedeutung |
+| --- | --- |
+| `timestamp` | UTC-Zeitstempel |
+| `direction` | `incoming`, `outgoing` oder `broadcast` |
+| `localNodeId`, `peerNodeId` | lokale ID und Gegenstelle |
+| `sequenceNumber` | Sequenznummer des P2P-Frames |
+| `payloadType` | `text` bei gültigem UTF-8, sonst `hex` |
+| `text` | Textdarstellung oder `null` |
+| `hex` | vollständige Hexdarstellung |
+| `status` | `received`, `acknowledged`, `failed` oder `sent` |
+| `attempts` | Sendeversuche, falls zutreffend |
+| `rssiDbm`, `snrDb` | Empfangswerte, falls zutreffend |
+
+```text
+export-chat ~/LoRaP2P/sessions/<session>.jsonl
+export-chat ~/LoRaP2P/sessions/<session>.jsonl ./chat.html
+```
+
+Ohne zweiten Pfad entsteht die HTML-Datei neben der JSONL-Datei. Der Export
+ist eigenständig, kodiert Nachrichteninhalte für HTML und meldet die
+Zeilennummer eines ungültigen JSON-Objekts.
+
+## 4. Unit-Testmatrix
 
 ### Frame-Codec
 
@@ -160,8 +195,12 @@ persistiert. Ein Reset-Befehl ist im ersten P2P-Release nicht vorgesehen.
 - ungültige IDs und Hexdaten erzeugen verständliche Fehler,
 - Ausgaben unterscheiden `TxDone`, ACK und Zustellfehler,
 - `peers` und `stats` bilden den Dienstzustand korrekt ab.
+- Senden, Empfang und Broadcast erzeugen die erwarteten JSONL-Sitzungen,
+- der Export funktioniert mit Standard- und explizitem Zielpfad,
+- fehlerhafte JSON-Zeilen werden mit Zeilennummer abgelehnt,
+- HTML-Sonderzeichen in Nachrichten werden nicht als Markup interpretiert.
 
-## 4. Test-Doubles
+## 5. Test-Doubles
 
 Der skriptbare Radio-Fake stellt bereit:
 
@@ -175,7 +214,7 @@ Der skriptbare Radio-Fake stellt bereit:
 Zeit und Zufall werden injiziert. Tests dürfen nicht real zwei Sekunden auf
 ACK-Timeouts oder Duty-Cycle-Pausen warten.
 
-## 5. Hardwareabnahme mit zwei Geräten
+## 6. Hardwareabnahme mit zwei Geräten
 
 ### Vorbereitung
 
@@ -213,7 +252,7 @@ ACK-Timeouts oder Duty-Cycle-Pausen warten.
 - relevante Statistikzähler,
 - beobachtete Duty-Cycle-Pause.
 
-## 6. Releasevalidierung
+## 7. Releasevalidierung
 
 ```powershell
 dotnet restore LoRaP2P.slnx
@@ -225,4 +264,3 @@ dotnet publish src/LoRaP2P.Console/LoRaP2P.Console.csproj `
   --self-contained true `
   --output artifacts/linux-arm64
 ```
-

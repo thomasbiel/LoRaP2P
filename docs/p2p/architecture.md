@@ -11,6 +11,11 @@ flowchart TD
     CLI[LoRaP2P.Console]
     VERBS[P2P-Konsolenverben]
     CONFIG[P2pConfigurationStore]
+    SESSION[P2pConsoleSession]
+    LOG[P2pSessionLog]
+    EXPORT[P2pChatExporter]
+    JSONL[JSONL-Sitzungsdateien]
+    HTML[Eigenständige HTML-Chatansicht]
     NODE[P2pNode]
     CODEC[P2pFrameCodec]
     PEERS[PeerRegistry]
@@ -21,10 +26,17 @@ flowchart TD
     HARDWARE[SystemDeviceRfm9xTransport]
 
     CLI --> VERBS
-    VERBS --> NODE
+    VERBS --> SESSION
     VERBS --> CONFIG
     VERBS --> PEERS
     VERBS --> STATS
+    VERBS --> EXPORT
+
+    SESSION --> NODE
+    SESSION --> LOG
+    LOG --> JSONL
+    EXPORT --> JSONL
+    EXPORT --> HTML
 
     NODE --> CODEC
     NODE --> PEERS
@@ -38,13 +50,15 @@ flowchart TD
 
 ## 2. Projektstruktur
 
-Geplant:
+Implementiert:
 
 ```text
 src/
   LoRaP2P.Console/
     Commands/
-    P2p/
+    P2pConsoleSession.cs
+    P2pSessionLog.cs
+    P2pChatExporter.cs
   LoRaP2P.Protocol/
     Frames/
     Peers/
@@ -119,6 +133,18 @@ Thread-sichere sitzungsbezogene Zähler:
 - meldet I/O- und Validierungsfehler explizit,
 - speichert keine Schlüssel.
 
+### P2pSessionLog und P2pChatExporter
+
+`P2pConsoleSession` protokolliert gesendete und empfangene Nutzdaten
+prozessweit. `P2pSessionLog` hält je Kombination aus lokaler ID und Peer einen
+append-only JSONL-Writer offen und schließt alle Writer beim Prozessende.
+Broadcasts verwenden eine eigene Pseudo-Gegenstelle.
+
+`P2pChatExporter` liest auch eine noch geöffnete Sitzungsdatei, validiert
+jedes JSON-Objekt und erzeugt atomar eine eigenständige HTML-Datei. Dynamische
+Inhalte werden HTML-kodiert; externe Skripte, Schriften oder Stylesheets
+werden nicht geladen.
+
 ## 4. Sendeablauf
 
 ```mermaid
@@ -180,4 +206,3 @@ skriptbarer Fake benötigt:
 - deterministische Backoff-Werte über eine injizierte Zufallsquelle.
 
 Damit werden Retries und Timeouts ohne echte Wartezeit getestet.
-
