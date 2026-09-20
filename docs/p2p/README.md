@@ -36,6 +36,8 @@ erforderlich.
 
 ## Dokumente
 
+- [Funkkonfiguration](../radio-configuration.md): sämtliche Felder der
+  `appsettings.json`, Time-on-Air, Duty Cycle und EU868-Rahmenbedingungen.
 - [Protokollspezifikation](protocol-v1.md): binäres Wire-Format,
   Validierung, ACKs, Retries und Duplikate.
 - [Zielarchitektur](architecture.md): Komponenten, Abhängigkeiten,

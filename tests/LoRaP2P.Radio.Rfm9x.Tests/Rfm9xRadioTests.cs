@@ -31,7 +31,7 @@ public sealed class Rfm9xRadioTests : IAsyncDisposable
     {
         await _radio.ConfigureAsync(_configuration);
 
-        var frequencyValue = Rfm9xFrequency.ToRegisterValue(868_100_000);
+        var frequencyValue = Rfm9xFrequency.ToRegisterValue(869_525_000);
         Assert.Multiple(() =>
         {
             Assert.That(_transport.ReadByte(0x06), Is.EqualTo((byte)(frequencyValue >> 16)));

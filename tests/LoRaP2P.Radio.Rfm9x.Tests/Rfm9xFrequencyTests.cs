@@ -3,9 +3,23 @@ namespace LoRaP2P.Radio.Rfm9x.Tests;
 public sealed class Rfm9xFrequencyTests
 {
     [Test]
+    public void DefaultConfigurationUsesGermanBand54Profile()
+    {
+        var configuration = new RadioConfiguration();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(configuration.FrequencyHertz, Is.EqualTo(869_525_000));
+            Assert.That(configuration.Bandwidth, Is.EqualTo(SignalBandwidth.Khz125));
+            Assert.That(configuration.OutputPowerDbm, Is.EqualTo(14));
+            Assert.That(configuration.DutyCycle, Is.EqualTo(0.1));
+        });
+    }
+
+    [Test]
     public void Eu868FrequencyRoundTripStaysWithinOneFrequencyStep()
     {
-        const double frequencyHertz = 868_100_000;
+        const double frequencyHertz = 869_525_000;
 
         var registerValue = Rfm9xFrequency.ToRegisterValue(frequencyHertz);
         var actualFrequencyHertz = Rfm9xFrequency.FromRegisterValue(registerValue);

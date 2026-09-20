@@ -10,7 +10,7 @@ public sealed record RadioConfiguration
 
     public int Dio0Pin { get; init; } = 22;
 
-    public double FrequencyHertz { get; init; } = 868_100_000;
+    public double FrequencyHertz { get; init; } = 869_525_000;
 
     public SpreadingFactor SpreadingFactor { get; init; } = SpreadingFactor.Sf7;
 
@@ -30,7 +30,7 @@ public sealed record RadioConfiguration
 
     public bool InvertIq { get; init; }
 
-    public double DutyCycle { get; init; } = 0.01;
+    public double DutyCycle { get; init; } = 0.1;
 
     public TimeSpan OperationTimeout { get; init; } = TimeSpan.FromSeconds(5);
 

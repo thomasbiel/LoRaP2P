@@ -71,6 +71,10 @@ Alternative Konfiguration:
 ./LoRaP2P.Console --config /etc/LoRaP2P/radio.json
 ```
 
+Alle Felder, gültigen Werte, Wechselwirkungen sowie Duty-Cycle- und
+EU868-Hinweise stehen in der
+[Dokumentation der Funkkonfiguration](docs/radio-configuration.md).
+
 Alternative P2P-Konfiguration:
 
 ```bash
@@ -96,7 +100,7 @@ benötigt.
 probe
 status
 reset
-configure frequency 868.1
+configure frequency 869.525
 configure sf 7
 configure bandwidth 125
 configure power 14

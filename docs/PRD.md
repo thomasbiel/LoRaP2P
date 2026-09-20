@@ -77,10 +77,14 @@ Vor jedem Sendeversuch muss eine auf 868 MHz abgestimmte Antenne angeschlossen s
 - `--check` MUSS Reset, SPI-Kommunikation, Chipversion, Konfiguration,
   Standby-Status, OLED und die drei Bonnet-Taster prüfen und bis zum Abbruch
   weiterlaufen.
-- Standardprofil MUSS 868,1 MHz, SF7, BW125, CR 4/5, Payload-CRC, Syncword `0x34` und 14 dBm verwenden.
+- Standardprofil MUSS 869,525 MHz, SF7, BW125, CR 4/5, Payload-CRC,
+  Syncword `0x34`, 14 dBm und 10 % Duty Cycle verwenden.
 - Frequenzen außerhalb 863 bis 870 MHz MÜSSEN abgelehnt werden.
 - Sendeleistungen außerhalb 2 bis 14 dBm MÜSSEN abgelehnt werden.
 - Reset- und DIO0-Pin MÜSSEN unterschiedlich und nicht negativ sein.
+- Semantik, Wertebereiche, Wechselwirkungen und regulatorische Grenzen der
+  Felder sind in der
+  [Dokumentation der Funkkonfiguration](radio-configuration.md) beschrieben.
 
 ### FR-002: Hardwaretransport
 
@@ -233,7 +237,7 @@ flowchart TD
 
 - `/dev/spidev0.1` ist vorhanden.
 - Anwendung liest Chipversion `0x12`.
-- `status` zeigt 868,1 MHz, SF7, BW125 und 14 dBm.
+- `status` zeigt 869,525 MHz, SF7, BW125 und 14 dBm.
 - `send text ping` endet über DIO0 mit `TxDone`.
 - Timeout und Ctrl+C lassen das Radio im Standby-Modus zurück.
 

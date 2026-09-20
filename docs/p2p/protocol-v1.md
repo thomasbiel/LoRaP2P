@@ -126,6 +126,9 @@ als AES-GCM-Nonce verwendet werden.
 
 Die bereits im RFM9x-Treiber implementierte Duty-Cycle-Wartezeit gilt für
 jeden Versuch und jedes ACK. Der Backoff ersetzt diese Wartezeit nicht.
+Berechnung, Konfigurationswirkung, Implementierungsgrenzen und regulatorische
+Einordnung stehen in der
+[Dokumentation der Funkkonfiguration](../radio-configuration.md#5-duty-cycle).
 
 ## 8. ACK-Erzeugung
 
@@ -155,4 +158,3 @@ Kollisionsfreiheit besteht nicht.
 
 Alle P2P-Transaktionen eines Geräts werden serialisiert. Eine zweite lokale
 Sendetransaktion wartet, bis die erste abgeschlossen oder fehlgeschlagen ist.
-
