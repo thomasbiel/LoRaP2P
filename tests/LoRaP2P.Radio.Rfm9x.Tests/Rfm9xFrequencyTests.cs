@@ -46,4 +46,12 @@ public sealed class Rfm9xFrequencyTests
 
         Assert.That(configuration.Validate, Throws.TypeOf<ArgumentOutOfRangeException>());
     }
+
+    [Test]
+    public void ConfigurationRejectsOutputPowerAboveSeventeenDbm()
+    {
+        var configuration = new RadioConfiguration { OutputPowerDbm = 18 };
+
+        Assert.That(configuration.Validate, Throws.TypeOf<ArgumentOutOfRangeException>());
+    }
 }

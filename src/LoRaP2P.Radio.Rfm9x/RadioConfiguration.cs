@@ -71,9 +71,9 @@ public sealed record RadioConfiguration
             throw new ArgumentOutOfRangeException(nameof(CodingRate));
         }
 
-        if (OutputPowerDbm is < 2 or > 14)
+        if (OutputPowerDbm is < 2 or > 17)
         {
-            throw new ArgumentOutOfRangeException(nameof(OutputPowerDbm), "PoC output power is limited to 2 through 14 dBm for EU868.");
+            throw new ArgumentOutOfRangeException(nameof(OutputPowerDbm), "PoC output power is limited to 2 through 17 dBm for EU868.");
         }
 
         if (PreambleSymbols < 6)

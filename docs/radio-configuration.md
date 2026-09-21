@@ -110,7 +110,7 @@ Nutzdatendurchsatz.
 ### `OutputPowerDbm`
 
 - Standard: `14` dBm.
-- Von der Anwendung akzeptiert: 2 bis 14 dBm.
+- Von der Anwendung akzeptiert: 2 bis 17 dBm.
 - Steuert die Ausgangsleistung am PA-Boost-Ausgang des RFM95.
 
 14 dBm entsprechen näherungsweise 25 mW am Senderausgang. Der konfigurierte
@@ -118,6 +118,11 @@ Wert ist jedoch nicht automatisch die regulatorisch relevante ERP oder EIRP:
 Antennengewinn, Kabel- und Steckerverluste sowie die Bezugsantenne müssen
 berücksichtigt werden. Eine Antenne mit Gewinn kann die effektive
 Strahlungsleistung über den zulässigen Wert anheben.
+
+17 dBm entsprechen näherungsweise 50 mW und sind die Obergrenze des normalen
+PA-Boost-Betriebs. Der vom RFM95 unterstützte +20-dBm-Modus benötigt weitere
+Registereinstellungen und strengere Betriebsbedingungen; der Treiber
+aktiviert ihn nicht.
 
 #### ERP und EIRP
 
@@ -332,8 +337,9 @@ Die Standardkonfiguration verwendet mit dem vorhandenen 125-kHz-Profil:
 Das auf 869,525 MHz zentrierte 125-kHz-Signal belegt näherungsweise
 869,4625–869,5875 MHz und liegt damit innerhalb des zugeteilten Teilbands.
 500 mW ERP sind eine Obergrenze, keine erforderliche Sendeleistung. Der
-Treiber begrenzt den RFM95-Ausgang weiterhin auf 14 dBm, also ungefähr 25 mW
-vor Berücksichtigung von Antenne und Verlusten.
+Standard betreibt den RFM95-Ausgang weiterhin mit 14 dBm, also ungefähr 25 mW
+vor Berücksichtigung von Antenne und Verlusten. Konfigurierbar sind bis zu
+17 dBm, also ungefähr 50 mW.
 
 Die Änderung von 1 % auf 10 % verkürzt die vorgeschriebene Pause von der
 99-fachen auf die 9-fache Time-on-Air. Bei unverändertem SF7/BW125/CR-4/5-Profil

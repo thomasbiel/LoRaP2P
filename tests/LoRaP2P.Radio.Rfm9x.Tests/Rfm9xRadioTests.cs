@@ -47,6 +47,14 @@ public sealed class Rfm9xRadioTests : IAsyncDisposable
     }
 
     [Test]
+    public async Task ConfigureWritesMaximumOutputPower()
+    {
+        await _radio.ConfigureAsync(_configuration with { OutputPowerDbm = 17 });
+
+        Assert.That(_transport.ReadByte(0x09), Is.EqualTo(0x8F));
+    }
+
+    [Test]
     public async Task TransmitWritesFifoAndCompletesOnTxDone()
     {
         await _radio.ConfigureAsync(_configuration);

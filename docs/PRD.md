@@ -80,7 +80,7 @@ Vor jedem Sendeversuch muss eine auf 868 MHz abgestimmte Antenne angeschlossen s
 - Standardprofil MUSS 869,525 MHz, SF7, BW125, CR 4/5, Payload-CRC,
   Syncword `0x34`, 14 dBm und 10 % Duty Cycle verwenden.
 - Frequenzen außerhalb 863 bis 870 MHz MÜSSEN abgelehnt werden.
-- Sendeleistungen außerhalb 2 bis 14 dBm MÜSSEN abgelehnt werden.
+- Sendeleistungen außerhalb 2 bis 17 dBm MÜSSEN abgelehnt werden.
 - Reset- und DIO0-Pin MÜSSEN unterschiedlich und nicht negativ sein.
 - Semantik, Wertebereiche, Wechselwirkungen und regulatorische Grenzen der
   Felder sind in der
@@ -138,7 +138,7 @@ Folgende Befehle MÜSSEN vorhanden sein:
 | `configure frequency <MHz>` | EU868-Frequenz setzen |
 | `configure sf <7-12>` | Spreading Factor setzen |
 | `configure bandwidth <125\|250\|500>` | Bandbreite setzen |
-| `configure power <2-14>` | Leistung setzen |
+| `configure power <2-17>` | Leistung setzen |
 | `send text <value>` | UTF-8-Payload senden |
 | `send hex <bytes>` | Binärpayload senden |
 | `receive [seconds]` | Ein Paket oder Timeout abwarten |
