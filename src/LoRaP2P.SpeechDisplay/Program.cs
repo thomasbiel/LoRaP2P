@@ -79,8 +79,15 @@ internal static class Program
 
             return 0;
         }
-        catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
+        catch (Exception exception) when (cancellation.IsCancellationRequested
+            && exception is OperationCanceledException or IOException)
         {
+            if (!System.Console.IsOutputRedirected)
+            {
+                System.Console.Write("\r\u001b[2K");
+            }
+
+            System.Console.WriteLine("Speech display stopped by user.");
             return 0;
         }
         catch (Exception exception)

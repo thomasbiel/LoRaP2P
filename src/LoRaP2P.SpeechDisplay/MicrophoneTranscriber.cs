@@ -55,7 +55,7 @@ internal static class MicrophoneTranscriber
     {
         using var microphone = new Process { StartInfo = CreateStartInfo(device) };
         microphone.Start();
-        var errors = RelayErrorsAsync(microphone.StandardError);
+        var errors = microphone.StandardError.ReadToEndAsync(CancellationToken.None);
         try
         {
             await ReadPcmAsync(microphone.StandardOutput.BaseStream, (buffer, count) =>
@@ -66,9 +66,9 @@ internal static class MicrophoneTranscriber
                 }
             }, cancellationToken).ConfigureAwait(false);
 
-            onText(ReadText(recognizer.FinalResult()));
             await microphone.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
-            throw new IOException($"Microphone capture stopped unexpectedly (arecord exit code {microphone.ExitCode}).");
+            await HandleCaptureExitAsync(microphone.ExitCode, await errors.ConfigureAwait(false),
+                cancellationToken).ConfigureAwait(false);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
@@ -125,11 +125,16 @@ internal static class MicrophoneTranscriber
         }
     }
 
-    private static async Task RelayErrorsAsync(StreamReader errorReader)
+    internal static async Task HandleCaptureExitAsync(
+        int exitCode,
+        string diagnostics,
+        CancellationToken cancellationToken)
     {
-        while (await errorReader.ReadLineAsync().ConfigureAwait(false) is { } line)
-        {
-            await System.Console.Error.WriteLineAsync(line).ConfigureAwait(false);
-        }
+        await Task.Delay(TimeSpan.FromMilliseconds(100), cancellationToken).ConfigureAwait(false);
+        cancellationToken.ThrowIfCancellationRequested();
+        var details = string.IsNullOrWhiteSpace(diagnostics) ? "" : $" {diagnostics.Trim()}";
+        throw new IOException($"Microphone capture ended unexpectedly (arecord exit code {exitCode})."
+            + " Check that the microphone is connected and the selected ALSA device is available."
+            + details);
     }
 }

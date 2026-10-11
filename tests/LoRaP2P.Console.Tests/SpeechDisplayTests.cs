@@ -200,6 +200,29 @@ public sealed class SpeechDisplayTests
                 new CancellationToken(canceled: true)));
     }
 
+    [Test]
+    public async Task CaptureExitDuringCancellationDoesNotReportMicrophoneFailure()
+    {
+        using var cancellation = new CancellationTokenSource();
+        var handling = MicrophoneTranscriber.HandleCaptureExitAsync(1,
+            "arecord: pcm_read:2272: read error: Interrupted system call", cancellation.Token);
+        cancellation.Cancel();
+
+        await Assert.CatchAsync<OperationCanceledException>(() => handling);
+    }
+
+    [Test]
+    public async Task UnexpectedCaptureExitPreservesUsefulMicrophoneDiagnostics()
+    {
+        var exception = await Assert.ThrowsAsync<IOException>(() =>
+            MicrophoneTranscriber.HandleCaptureExitAsync(1, "arecord: Device or resource busy",
+                CancellationToken.None));
+
+        Assert.That(exception, Is.Not.Null);
+        Assert.That(exception!.Message, Does.Contain("selected ALSA device is available"));
+        Assert.That(exception.Message, Does.Contain("Device or resource busy"));
+    }
+
     private sealed class FragmentedAudioStream(byte[] audio, int fragmentSize) : MemoryStream(audio)
     {
         public override ValueTask<int> ReadAsync(
