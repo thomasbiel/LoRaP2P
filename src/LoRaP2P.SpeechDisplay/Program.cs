@@ -1,3 +1,4 @@
+using System.Globalization;
 using CommandLine;
 using LoRaP2P.Display.RadioBonnet;
 using Vosk;
@@ -8,6 +9,8 @@ internal static class Program
 {
     public static async Task<int> Main(string[] args)
     {
+        CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("en-US");
+        CultureInfo.DefaultThreadCurrentUICulture = CultureInfo.CurrentUICulture;
         using var parser = new Parser(settings => settings.HelpWriter = System.Console.Out);
         var parsed = parser.ParseArguments<SpeechDisplayOptions>(args);
         return await parsed.MapResult(RunAsync, errors => Task.FromResult(
@@ -29,7 +32,7 @@ internal static class Program
             options.Validate();
             if (!OperatingSystem.IsLinux())
             {
-                System.Console.Error.WriteLine("Mikrofonaufnahme benoetigt Linux mit ALSA/arecord.");
+                System.Console.Error.WriteLine("Microphone capture requires Linux with ALSA/arecord.");
                 return 1;
             }
 
@@ -46,7 +49,7 @@ internal static class Program
             using var display = options.NoDisplay ? null : new RadioBonnetDisplay();
             var buffer = new SpeechScrollBuffer();
             using var session = CancellationTokenSource.CreateLinkedTokenSource(cancellation.Token);
-            System.Console.WriteLine($"Mikrofon: {options.Device}; 16000 Hz, Mono. Beenden mit Ctrl+C.");
+            System.Console.WriteLine($"Microphone: {options.Device}; 16000 Hz, mono. Press Ctrl+C to stop.");
             var scrolling = ScrollAsync(buffer, display, options.ScrollMilliseconds, session.Token);
             var recording = MicrophoneTranscriber.RunAsync(options.Device, recognizer, text =>
             {
@@ -82,8 +85,8 @@ internal static class Program
         }
         catch (Exception exception)
         {
-            System.Console.Error.WriteLine($"Fehler: {exception.Message}");
-            System.Console.Error.WriteLine("ALSA-Mikrofon, Vosk-Modell/Bibliotheksarchitektur und I2C-/GPIO-Rechte pruefen.");
+            System.Console.Error.WriteLine($"Error: {exception.Message}");
+            System.Console.Error.WriteLine("Check the ALSA microphone, Vosk model/library architecture, and I2C/GPIO permissions.");
             return 1;
         }
         finally

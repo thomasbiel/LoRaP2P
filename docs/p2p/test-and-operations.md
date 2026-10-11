@@ -1,12 +1,12 @@
-# Test- und Betriebsplan
+# Test and Operations Plan
 
-## 1. P2P-Konfiguration
+## 1. P2P Configuration
 
-Die P2P-Daten werden getrennt von der Funkkonfiguration gespeichert.
-Standardpfad ist `p2p.json` im Anwendungsverzeichnis. Ein optionaler
-Startparameter `--peer-config <path>` überschreibt den Pfad.
+P2P data is stored separately from the radio configuration. The default path
+is `p2p.json` in the application directory. An optional startup parameter
+`--peer-config <path>` overrides the path.
 
-Geplantes Format:
+Planned format:
 
 ```json
 {
@@ -22,23 +22,23 @@ Geplantes Format:
 }
 ```
 
-Validierung:
+Validation:
 
-- lokale ID muss 1 bis 65534 sein,
-- Peer-IDs müssen 1 bis 65534 sein,
-- lokale ID darf nicht in `Peers` stehen,
-- Peer-IDs sind eindeutig,
-- ACK-Timeout und Zeitspannen müssen positiv sein,
-- `BackoffMinimum` darf `BackoffMaximum` nicht überschreiten,
-- `MaxRetries` muss 0 bis 10 sein,
-- Cachegröße muss 1 bis 1024 sein.
+- local ID must be 1 to 65534,
+- peer IDs must be 1 to 65534,
+- local ID must not be in `Peers`,
+- peer IDs are unique,
+- ACK timeout and time spans must be positive,
+- `BackoffMinimum` must not exceed `BackoffMaximum`,
+- `MaxRetries` must be 0 to 10,
+- cache size must be 1 to 1024.
 
-Die Datei enthält keine Schlüssel. Schreiboperationen erfolgen atomar. Ein
-Fehler beim Laden oder Speichern wird nicht durch leere Defaults verdeckt.
+The file contains no keys. Write operations are atomic. An error while loading
+or saving is not hidden by empty defaults.
 
-## 2. CLI-Verhalten
+## 2. CLI Behavior
 
-### Peer-Verwaltung
+### Peer Management
 
 ```text
 peer id 1
@@ -46,42 +46,42 @@ peer add 2
 peers
 ```
 
-- `peer id` ersetzt die lokale ID und speichert sofort.
-- `peer add` ist für bereits vorhandene IDs idempotent.
-- Broadcast und ID 0 werden als Peer abgelehnt.
-- `peers` zeigt konfigurierte IDs sowie sitzungsbezogen letzten Empfang,
-  RSSI, SNR und letzte Sequenznummer.
+- `peer id` replaces the local ID and saves immediately.
+- `peer add` is idempotent for IDs that already exist.
+- Broadcast and ID 0 are rejected as peers.
+- `peers` shows configured IDs and the session-specific last reception, RSSI,
+  SNR, and last sequence number.
 
-### Empfangen
+### Receiving
 
 ```text
 listen
 ```
 
-- gibt einen deutlichen Hinweis auf unverschlüsselten Betrieb aus,
-- läuft bis Strg+C,
-- zeigt Absender, Sequenznummer, Text/Hex, RSSI, SNR und Duplikatstatus,
-- bestätigt direkt adressierte gültige Daten,
-- bestätigt Broadcasts nicht,
-- beendet die gesamte Anwendung bei Strg+C.
+- displays a clear notice about unencrypted operation,
+- runs until Ctrl+C,
+- shows sender, sequence number, text/hex, RSSI, SNR, and duplicate status,
+- acknowledges valid directly addressed data,
+- does not acknowledge broadcasts,
+- terminates the entire application on Ctrl+C.
 
-### Adressiertes Senden
+### Addressed Transmission
 
 ```text
 send-to 2 text "hello world"
 send-to 2 hex DEADBEEF
 ```
 
-Erfolgsausgabe enthält:
+Success output contains:
 
-- Peer-ID,
-- Sequenznummer,
-- Anzahl Versuche,
-- Time-on-Air des letzten Versuchs,
-- ACK-Latenz.
+- peer ID,
+- sequence number,
+- attempt count,
+- time-on-air of the last attempt,
+- ACK latency.
 
-Nach ausgeschöpften Retries wird ein Zustellfehler ausgegeben. `TxDone` allein
-gilt nicht als Zustellung.
+After retries are exhausted, a delivery failure is displayed. `TxDone` alone
+does not count as delivery.
 
 ### Broadcast
 
@@ -89,179 +89,177 @@ gilt nicht als Zustellung.
 broadcast text "hello all"
 ```
 
-Broadcast meldet nur den lokalen `TxDone`-Abschluss und weist ausdrücklich
-darauf hin, dass kein ACK erwartet wird.
+Broadcast reports only the local `TxDone` completion and explicitly indicates
+that no ACK is expected.
 
-Empfangene Broadcast-Texte erscheinen zusätzlich auf dem OLED. Es stehen vier
-Zeilen mit jeweils bis zu 21 Zeichen zur Verfügung. Längere Nachrichten
-scrollen einmal im Abstand von einer Sekunde zeilenweise nach oben und lassen
-die letzte Seite sichtbar. Eine neue Broadcast-Nachricht ersetzt die laufende
-Anzeige. Direkt adressierte Nachrichten verändern das OLED nicht.
+Received broadcast text also appears on the OLED. Four lines of up to 21
+characters each are available. Longer messages scroll upward one line at a
+time at one-second intervals and leave the last page visible. A new broadcast
+message replaces the active display. Directly addressed messages do not change
+the OLED.
 
-### Statistik
+### Statistics
 
 ```text
 stats
 ```
 
-Statistiken gelten für die aktuelle Prozesssitzung und werden nicht
-persistiert. Ein Reset-Befehl ist im ersten P2P-Release nicht vorgesehen.
+Statistics apply to the current process session and are not persisted. A reset
+command is not planned for the first P2P release.
 
-## 3. Nachrichtenpersistenz und Chat-Export
+## 3. Message Persistence and Chat Export
 
-Beim ersten Versand oder Empfang wird je Kombination aus lokaler Geräte-ID und
-Gegenstelle eine Datei im Standardverzeichnis `~/LoRaP2P/sessions` geöffnet.
-Die Writer bleiben bis zum Prozessende offen und schreiben UTF-8 ohne BOM.
-Dateien können währenddessen gelesen und exportiert werden. Broadcasts werden
-getrennt in einer Datei mit `peerbroadcast` im Namen geführt.
+On the first transmission or reception, a file is opened for each combination
+of local device ID and peer in the default directory `~/LoRaP2P/sessions`.
+Writers remain open until the process ends and write UTF-8 without a BOM.
+Files can be read and exported while open. Broadcasts are kept separately in a
+file with `peerbroadcast` in its name.
 
-Dateinamen folgen dem Muster
-`yyyyMMddTHHmmssfffZ-node<local>-peer<peer>.jsonl`; bei einer Kollision wird
-ein numerischer Suffix ergänzt. Jede nichtleere Zeile enthält genau ein
-JSON-Objekt:
+File names follow the pattern
+`yyyyMMddTHHmmssfffZ-node<local>-peer<peer>.jsonl`; in case of a collision,
+a numeric suffix is added. Each non-empty line contains exactly one JSON object:
 
-| Feld | Bedeutung |
+| Field | Meaning |
 | --- | --- |
-| `timestamp` | UTC-Zeitstempel |
-| `direction` | `incoming`, `outgoing` oder `broadcast` |
-| `localNodeId`, `peerNodeId` | lokale ID und Gegenstelle |
-| `sequenceNumber` | Sequenznummer des P2P-Frames |
-| `payloadType` | `text` bei gültigem UTF-8, sonst `hex` |
-| `text` | Textdarstellung oder `null` |
-| `hex` | vollständige Hexdarstellung |
-| `status` | `received`, `acknowledged`, `failed` oder `sent` |
-| `attempts` | Sendeversuche, falls zutreffend |
-| `rssiDbm`, `snrDb` | Empfangswerte, falls zutreffend |
+| `timestamp` | UTC timestamp |
+| `direction` | `incoming`, `outgoing`, or `broadcast` |
+| `localNodeId`, `peerNodeId` | local ID and peer |
+| `sequenceNumber` | P2P frame sequence number |
+| `payloadType` | `text` for valid UTF-8, otherwise `hex` |
+| `text` | text representation or `null` |
+| `hex` | complete hexadecimal representation |
+| `status` | `received`, `acknowledged`, `failed`, or `sent` |
+| `attempts` | transmission attempts, if applicable |
+| `rssiDbm`, `snrDb` | reception values, if applicable |
 
 ```text
 export-chat ~/LoRaP2P/sessions/<session>.jsonl
 export-chat ~/LoRaP2P/sessions/<session>.jsonl ./chat.html
 ```
 
-Ohne zweiten Pfad entsteht die HTML-Datei neben der JSONL-Datei. Der Export
-ist eigenständig, kodiert Nachrichteninhalte für HTML und meldet die
-Zeilennummer eines ungültigen JSON-Objekts.
+Without a second path, the HTML file is created next to the JSONL file. The
+export is standalone, encodes message content for HTML, and reports the line
+number of an invalid JSON object.
 
-## 4. Unit-Testmatrix
+## 4. Unit Test Matrix
 
-### Frame-Codec
+### Frame Codec
 
-- Roundtrip für `Data`, `Ack` und `Error`,
-- minimale und maximale Payload,
-- falsche Version,
-- unbekannter Typ,
-- gesetzte reservierte Flags,
-- ungültige IDs,
-- zu kurzer Header,
-- abweichende Payloadlänge,
-- ACK mit Payload,
-- Broadcast-ACK,
-- Big-Endian-Testwerte.
+- round trip for `Data`, `Ack`, and `Error`,
+- minimum and maximum payload,
+- incorrect version,
+- unknown type,
+- set reserved flags,
+- invalid IDs,
+- header that is too short,
+- mismatched payload length,
+- ACK with payload,
+- broadcast ACK,
+- Big Endian test values.
 
-### Peer- und Konfigurationszustand
+### Peer and Configuration State
 
-- Laden einer gültigen Datei,
-- fehlende Datei mit klar definiertem Initialzustand,
-- ungültiges JSON,
-- semantisch ungültige Werte,
-- atomisches Speichern,
-- doppelter Peer,
-- lokale ID als Peer,
-- I/O-Fehler beim Speichern.
+- loading a valid file,
+- missing file with clearly defined initial state,
+- invalid JSON,
+- semantically invalid values,
+- atomic saving,
+- duplicate peer,
+- local ID as peer,
+- I/O error while saving.
 
-### Empfang
+### Reception
 
-- direkt adressierter neuer Frame wird einmal ausgeliefert und bestätigt,
-- Duplikat wird bestätigt, aber nicht ausgeliefert,
-- Broadcast wird ausgeliefert, aber nicht bestätigt,
-- fremde Empfänger-ID wird verworfen,
-- CRC-Fehler wird gezählt und verworfen,
-- ungültiger Frame wird gezählt und verworfen,
-- ACK und Error werden nicht als Nutzdaten ausgeliefert,
-- Cancellation beendet den Empfang und hinterlässt Standby.
+- new directly addressed frame is delivered once and acknowledged,
+- duplicate is acknowledged but not delivered,
+- broadcast is delivered but not acknowledged,
+- foreign recipient ID is discarded,
+- CRC error is counted and discarded,
+- invalid frame is counted and discarded,
+- ACK and Error are not delivered as payload,
+- cancellation ends reception and leaves standby.
 
-### Zuverlässiges Senden
+### Reliable Transmission
 
-- passendes ACK beim ersten Versuch,
-- nicht passende Absender-ID,
-- nicht passende Sequenznummer,
-- ACK-Timeout und erfolgreicher Retry,
-- drei Retries nach dem ersten Versuch,
-- Zustellfehler nach vier Versuchen,
-- Backoff liegt im konfigurierten Bereich,
-- Broadcast wartet nicht auf ACK,
-- Cancellation während TX, ACK-Wartezeit und Backoff,
-- andere gültige Frames während der ACK-Wartezeit.
+- matching ACK on the first attempt,
+- non-matching sender ID,
+- non-matching sequence number,
+- ACK timeout and successful retry,
+- three retries after the first attempt,
+- delivery failure after four attempts,
+- backoff is within the configured range,
+- broadcast does not wait for ACK,
+- cancellation during TX, ACK wait, and backoff,
+- other valid frames during the ACK wait.
 
 ### CLI
 
-- alle neuen Verben werden erkannt,
-- quoted Text bleibt erhalten,
-- Hex-Payload wird korrekt geparst,
-- ungültige IDs und Hexdaten erzeugen verständliche Fehler,
-- Ausgaben unterscheiden `TxDone`, ACK und Zustellfehler,
-- `peers` und `stats` bilden den Dienstzustand korrekt ab.
-- nur Broadcasts werden an die OLED-Anzeige weitergereicht,
-- explizite Zeilenumbrüche, Wortumbruch und lange Wörter werden korrekt auf
-  21 Zeichen breite Displayzeilen verteilt,
-- Senden, Empfang und Broadcast erzeugen die erwarteten JSONL-Sitzungen,
-- der Export funktioniert mit Standard- und explizitem Zielpfad,
-- fehlerhafte JSON-Zeilen werden mit Zeilennummer abgelehnt,
-- HTML-Sonderzeichen in Nachrichten werden nicht als Markup interpretiert.
+- all new verbs are recognized,
+- quoted text is preserved,
+- hexadecimal payload is parsed correctly,
+- invalid IDs and hexadecimal data produce understandable errors,
+- output distinguishes `TxDone`, ACK, and delivery failure,
+- `peers` and `stats` correctly represent service state.
+- only broadcasts are forwarded to the OLED display,
+- explicit line breaks, word wrapping, and long words are correctly distributed
+  across display lines 21 characters wide,
+- transmission, reception, and broadcast create the expected JSONL sessions,
+- export works with the default and explicit target paths,
+- invalid JSON lines are rejected with their line number,
+- HTML special characters in messages are not interpreted as markup.
 
-## 5. Test-Doubles
+## 5. Test Doubles
 
-Der skriptbare Radio-Fake stellt bereit:
+The scriptable radio fake provides:
 
-- eine Queue für Empfangsergebnisse,
-- eine Liste übertragener Payloads,
-- steuerbare `TxDone`-Zeitpunkte,
-- Timeouts,
-- CRC-gültige und CRC-ungültige Pakete,
-- Cancellation.
+- a queue for reception results,
+- a list of transmitted payloads,
+- controllable `TxDone` points in time,
+- timeouts,
+- CRC-valid and CRC-invalid packets,
+- cancellation.
 
-Zeit und Zufall werden injiziert. Tests dürfen nicht real zwei Sekunden auf
-ACK-Timeouts oder Duty-Cycle-Pausen warten.
+Time and randomness are injected. Tests must not actually wait two seconds for
+ACK timeouts or duty-cycle pauses.
 
-## 6. Hardwareabnahme mit zwei Geräten
+## 6. Hardware Acceptance with Two Devices
 
-### Vorbereitung
+### Preparation
 
-- beide Geräte mit demselben Funkprofil konfigurieren,
-- Gerät A erhält ID 1 und Peer 2,
-- Gerät B erhält ID 2 und Peer 1,
-- auf beiden Geräten eine geeignete 868-MHz-Antenne anschließen,
-- Abstand zunächst wenige Meter ohne direkte Abschirmung,
-- Commit, Publish-Zeitpunkt und Konfigurationsdateien protokollieren.
+- configure both devices with the same radio profile,
+- assign device A ID 1 and peer 2,
+- assign device B ID 2 and peer 1,
+- connect a suitable 868-MHz antenna to both devices,
+- initially place them a few meters apart without direct shielding,
+- record the commit, publication time, and configuration files.
 
-### Testfälle
+### Test Cases
 
-1. A lauscht; B sendet Text an A.
-2. B lauscht; A sendet Binärdaten an B.
-3. Beide Richtungen liefern ein eindeutig zugeordnetes ACK.
-4. Ein Broadcast wird empfangen und nicht bestätigt.
-5. Das erste ACK wird kontrolliert verworfen; der Retry wird nur einmal
-   ausgeliefert.
-6. Der Empfänger wird ausgeschaltet; der Sender meldet nach vier Versuchen
-   einen Zustellfehler.
-7. Beide Geräte senden möglichst gleichzeitig; Backoff löst mindestens einen
-   späteren Versuch zeitlich auf.
-8. Abweichende Frequenz führt zu Timeout.
-9. Abweichendes Syncword führt zu Timeout.
-10. Strg+C während `listen` beendet sauber und hinterlässt Standby.
+1. A listens; B sends text to A.
+2. B listens; A sends binary data to B.
+3. Both directions provide a uniquely matched ACK.
+4. A broadcast is received and not acknowledged.
+5. The first ACK is deliberately discarded; the retry is delivered only once.
+6. The recipient is switched off; after four attempts, the sender reports a
+  delivery failure.
+7. Both devices transmit as simultaneously as possible; backoff temporally
+  separates at least one later attempt.
+8. A mismatched frequency causes a timeout.
+9. A mismatched syncword causes a timeout.
+10. Ctrl+C during `listen` exits cleanly and leaves standby.
 
-### Zu protokollierende Werte
+### Values to Record
 
-- Ergebnis und Zeitstempel,
-- Sequenznummer,
-- Versuchsanzahl,
-- Time-on-Air,
-- ACK-Latenz,
-- RSSI und SNR,
-- relevante Statistikzähler,
-- beobachtete Duty-Cycle-Pause.
+- result and timestamp,
+- sequence number,
+- attempt count,
+- time-on-air,
+- ACK latency,
+- RSSI and SNR,
+- relevant statistics counters,
+- observed duty-cycle pause.
 
-## 7. Releasevalidierung
+## 7. Release Validation
 
 ```powershell
 dotnet restore LoRaP2P.slnx

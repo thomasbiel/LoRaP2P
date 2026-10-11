@@ -15,7 +15,7 @@ internal sealed class VoskModelStore(HttpClient httpClient, string modelsDirecto
             var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
             if (string.IsNullOrWhiteSpace(home))
             {
-                throw new IOException("Benutzerordner konnte nicht ermittelt werden.");
+                throw new IOException("Could not determine the user directory.");
             }
 
             return Path.Combine(home, "LoRaP2P", "models");
@@ -29,7 +29,7 @@ internal sealed class VoskModelStore(HttpClient httpClient, string modelsDirecto
             || !string.IsNullOrEmpty(uri.UserInfo)
             || !string.IsNullOrEmpty(uri.Fragment))
         {
-            throw new ArgumentException("--model-url muss eine absolute HTTPS-URL ohne Zugangsdaten oder Fragment sein.");
+            throw new ArgumentException("--model-url must be an absolute HTTPS URL without credentials or a fragment.");
         }
 
         return uri;
@@ -54,7 +54,7 @@ internal sealed class VoskModelStore(HttpClient httpClient, string modelsDirecto
         {
             if (!IsModelDirectory(modelPath))
             {
-                throw new ArgumentException("--model muss auf ein vollstaendig entpacktes Vosk-Sprachmodell zeigen.");
+                throw new ArgumentException("--model must point to a fully extracted Vosk speech model.");
             }
 
             return Path.GetFullPath(modelPath);
@@ -65,13 +65,13 @@ internal sealed class VoskModelStore(HttpClient httpClient, string modelsDirecto
         var cachedModel = Path.Combine(modelsDirectory, key);
         if (IsModelDirectory(cachedModel))
         {
-            await output.WriteLineAsync($"Sprachmodell aus Cache: {cachedModel}").ConfigureAwait(false);
+            await output.WriteLineAsync($"Using cached speech model: {cachedModel}").ConfigureAwait(false);
             return cachedModel;
         }
 
         if (Directory.Exists(cachedModel))
         {
-            throw new IOException($"Modellcache unvollstaendig: {cachedModel}. Ordner entfernen und erneut starten.");
+            throw new IOException($"Incomplete model cache: {cachedModel}. Remove the directory and restart.");
         }
 
         Directory.CreateDirectory(modelsDirectory);
@@ -79,7 +79,7 @@ internal sealed class VoskModelStore(HttpClient httpClient, string modelsDirecto
         Directory.CreateDirectory(staging);
         try
         {
-            await output.WriteLineAsync($"Sprachmodell herunterladen: {uri}").ConfigureAwait(false);
+            await output.WriteLineAsync($"Downloading speech model: {uri}").ConfigureAwait(false);
             var archivePath = Path.Combine(staging, "model.zip");
             using (var response = await httpClient.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead,
                 cancellationToken).ConfigureAwait(false))
@@ -87,7 +87,7 @@ internal sealed class VoskModelStore(HttpClient httpClient, string modelsDirecto
                 response.EnsureSuccessStatusCode();
                 if (response.RequestMessage?.RequestUri is { Scheme: not "https" })
                 {
-                    throw new IOException("Sprachmodell-Download wurde auf eine unsichere URL umgeleitet.");
+                    throw new IOException("The speech model download was redirected to an insecure URL.");
                 }
 
                 await using var archiveFile = new FileStream(archivePath, FileMode.CreateNew, FileAccess.Write,
@@ -96,7 +96,7 @@ internal sealed class VoskModelStore(HttpClient httpClient, string modelsDirecto
             }
 
             cancellationToken.ThrowIfCancellationRequested();
-            await output.WriteLineAsync("Sprachmodell entpacken...").ConfigureAwait(false);
+            await output.WriteLineAsync("Extracting speech model...").ConfigureAwait(false);
             var extracted = Path.Combine(staging, "extracted");
             ZipFile.ExtractToDirectory(archivePath, extracted);
             cancellationToken.ThrowIfCancellationRequested();
@@ -104,7 +104,7 @@ internal sealed class VoskModelStore(HttpClient httpClient, string modelsDirecto
                 .Where(IsModelDirectory).ToArray();
             if (candidates.Length != 1)
             {
-                throw new InvalidDataException("ZIP muss genau ein vollstaendiges Vosk-Sprachmodell enthalten.");
+                throw new InvalidDataException("The ZIP must contain exactly one complete Vosk speech model.");
             }
 
             try
@@ -115,7 +115,7 @@ internal sealed class VoskModelStore(HttpClient httpClient, string modelsDirecto
             {
             }
 
-            await output.WriteLineAsync($"Sprachmodell bereit: {cachedModel}").ConfigureAwait(false);
+            await output.WriteLineAsync($"Speech model ready: {cachedModel}").ConfigureAwait(false);
             return cachedModel;
         }
         finally

@@ -1,3 +1,4 @@
+using System.Globalization;
 using LoRaP2P.SpeechDisplay;
 using LoRaP2P.Display.RadioBonnet;
 
@@ -6,9 +7,50 @@ namespace LoRaP2P.Console.Tests;
 [TestFixture]
 public sealed class SpeechDisplayTests
 {
-    private static readonly string[] ExpectedScrolled = ["zwei", "drei", "vier", "fuenf"];
-    private static readonly string[] ExpectedFirst = ["erster Satz"];
+    private static readonly string[] ExpectedScrolled = ["two", "three", "four", "five"];
+    private static readonly string[] ExpectedFirst = ["first sentence"];
     private static readonly string[] ExpectedBacklog = ["44"];
+
+    [TestCase(false)]
+    [TestCase(true)]
+    [NonParallelizable]
+    public async Task CliUsesEnglishUiLanguageWithoutChangingNumericCulture(bool speechTool)
+    {
+        var previousCulture = CultureInfo.CurrentCulture;
+        var previousUiCulture = CultureInfo.CurrentUICulture;
+        var previousDefaultUiCulture = CultureInfo.DefaultThreadCurrentUICulture;
+        var previousOutput = System.Console.Out;
+        var previousError = System.Console.Error;
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+        try
+        {
+            CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo("de-DE");
+            CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("de-DE");
+            CultureInfo.DefaultThreadCurrentUICulture = null;
+            System.Console.SetOut(output);
+            System.Console.SetError(error);
+
+            var exitCode = speechTool
+                ? await LoRaP2P.SpeechDisplay.Program.Main(["--help"])
+                : await LoRaP2P.Console.Program.Main(["--help"]);
+            Assert.Multiple(() =>
+            {
+                Assert.That(exitCode, Is.Zero);
+                Assert.That(CultureInfo.DefaultThreadCurrentUICulture?.Name, Is.EqualTo("en-US"));
+                Assert.That(CultureInfo.CurrentCulture.Name, Is.EqualTo("de-DE"));
+                Assert.That(output.ToString() + error, Does.Contain("--help"));
+            });
+        }
+        finally
+        {
+            System.Console.SetOut(previousOutput);
+            System.Console.SetError(previousError);
+            CultureInfo.CurrentCulture = previousCulture;
+            CultureInfo.CurrentUICulture = previousUiCulture;
+            CultureInfo.DefaultThreadCurrentUICulture = previousDefaultUiCulture;
+        }
+    }
 
     [Test]
     public void OptionsDefaultToBundledLibraryWithoutRequiringOverride()
@@ -33,7 +75,7 @@ public sealed class SpeechDisplayTests
     public void AdvanceScrollsUpAndKeepsLatestFourLines()
     {
         var buffer = new SpeechScrollBuffer();
-        buffer.Append("eins\nzwei\ndrei\nvier\nfuenf");
+        buffer.Append("one\ntwo\nthree\nfour\nfive");
 
         for (var index = 0; index < 4; index++)
         {
@@ -48,12 +90,12 @@ public sealed class SpeechDisplayTests
     public void AppendPreservesPreviouslyQueuedSpeechAndWrapsLongWords()
     {
         var buffer = new SpeechScrollBuffer();
-        buffer.Append("erster Satz");
+        buffer.Append("first sentence");
         buffer.Append(new string('x', 25));
 
         Assert.That(buffer.Advance(), Is.EqualTo(ExpectedFirst));
-        Assert.That(buffer.Advance(), Is.EqualTo(new[] { "erster Satz", new string('x', 21) }));
-        Assert.That(buffer.Advance(), Is.EqualTo(new[] { "erster Satz", new string('x', 21), "xxxx" }));
+        Assert.That(buffer.Advance(), Is.EqualTo(new[] { "first sentence", new string('x', 21) }));
+        Assert.That(buffer.Advance(), Is.EqualTo(new[] { "first sentence", new string('x', 21), "xxxx" }));
     }
 
     [Test]
@@ -71,10 +113,10 @@ public sealed class SpeechDisplayTests
         Assert.That(buffer.Advance(), Is.EqualTo(ExpectedBacklog));
     }
 
-    [TestCase("{\"text\":\"hallo welt\"}", "hallo welt")]
-    [TestCase("{\"text\":\"gr\\u00fcne wiese\"}", "gr\u00fcne wiese")]
+    [TestCase("{\"text\":\"hello world\"}", "hello world")]
+    [TestCase("{\"text\":\"caf\\u00e9 menu\"}", "caf\u00e9 menu")]
     [TestCase("{\"text\":\"\"}", "")]
-    [TestCase("{\"partial\":\"hallo\"}", "")]
+    [TestCase("{\"partial\":\"hello\"}", "")]
     public void ReadTextOnlyReturnsConfirmedUtf8Speech(string json, string expected)
     {
         Assert.That(MicrophoneTranscriber.ReadText(json), Is.EqualTo(expected));
@@ -90,6 +132,7 @@ public sealed class SpeechDisplayTests
             Assert.That(startInfo.UseShellExecute, Is.False);
             Assert.That(startInfo.RedirectStandardOutput, Is.True);
             Assert.That(startInfo.RedirectStandardError, Is.True);
+            Assert.That(startInfo.Environment["LC_ALL"], Is.EqualTo("C"));
             Assert.That(startInfo.ArgumentList, Does.Contain("plughw:CARD=USB,DEV=0"));
             Assert.That(startInfo.ArgumentList, Does.Contain("S16_LE"));
             Assert.That(startInfo.ArgumentList, Does.Contain("16000"));

@@ -27,6 +27,7 @@ internal static class MicrophoneTranscriber
             RedirectStandardOutput = true,
             RedirectStandardError = true
         };
+        startInfo.Environment["LC_ALL"] = "C";
         foreach (var argument in new[] { "--quiet", "--device", device, "--file-type", "raw",
             "--format", "S16_LE", "--channels", "1", "--rate",
             SampleRate.ToString(CultureInfo.InvariantCulture), "-" })
@@ -67,7 +68,7 @@ internal static class MicrophoneTranscriber
 
             onText(ReadText(recognizer.FinalResult()));
             await microphone.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
-            throw new IOException($"Mikrofonaufnahme unerwartet beendet (arecord Exit-Code {microphone.ExitCode}).");
+            throw new IOException($"Microphone capture stopped unexpectedly (arecord exit code {microphone.ExitCode}).");
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
@@ -114,7 +115,7 @@ internal static class MicrophoneTranscriber
                     .ConfigureAwait(false);
                 if (lastByte == 0)
                 {
-                    throw new IOException("Mikrofon lieferte ein unvollstaendiges 16-Bit-PCM-Sample.");
+                    throw new IOException("The microphone returned an incomplete 16-bit PCM sample.");
                 }
 
                 count++;

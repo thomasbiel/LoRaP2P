@@ -1,44 +1,50 @@
 # LoRaP2P Console
 
-.NET-10-Raw-LoRa-PoC für Raspberry Pi 3B+ und Adafruit RFM95W Radio Bonnet. Das Projekt portiert die grundlegende RFM9x-Registersteuerung auf `System.Device.Gpio` und schafft eine testbare Basis für einen späteren LoRaWAN-Class-A-Client.
+.NET 10 Raw LoRa PoC for Raspberry Pi 3B+ and Adafruit RFM95W Radio Bonnet. The project ports basic RFM9x register control to `System.Device.Gpio` and provides a testable foundation for a future LoRaWAN Class A client.
 
-> Der aktuelle Stand ist Raw LoRa, nicht LoRaWAN. `TxDone` bestätigt nur, dass der RFM95 den Sendevorgang beendet hat.
+> The current implementation is Raw LoRa, not LoRaWAN. `TxDone` only confirms that the RFM95 has completed transmission.
 
-Das vollständige Produktkonzept steht in [docs/PRD.md](docs/PRD.md).
-Die P2P-Ausbaustufe ist unter
-[docs/p2p/README.md](docs/p2p/README.md) spezifiziert.
+Project documentation, CLI help, and application diagnostics are in English.
+Both CLIs use an English .NET UI culture, and microphone capture uses the
+`C` locale for ALSA diagnostics. Numeric culture is unchanged. Received messages
+and recognized speech retain their original language; the default Vosk model
+continues to recognize German speech.
+
+The complete product concept is in [docs/PRD.md](docs/PRD.md).
+The P2P expansion is specified in
+[docs/p2p/README.md](docs/p2p/README.md).
 
 ## Hardware
 
-| Bonnet-Signal | Raspberry Pi |
+| Bonnet signal | Raspberry Pi |
 | --- | --- |
 | SPI | SPI0 |
 | CS | CE1 |
 | RST | BCM GPIO25 |
 | DIO0 | BCM GPIO22 |
-| DIO1 | BCM GPIO23, nicht verwendet |
-| DIO2 | BCM GPIO24, nicht verwendet |
+| DIO1 | BCM GPIO23, not used |
+| DIO2 | BCM GPIO24, not used |
 
-Vor dem Senden eine passende 868-MHz-Antenne anschließen. Die Standardkonfiguration ist für Deutschland/EU868 vorgesehen.
+Connect a suitable 868 MHz antenna before transmitting. The default configuration is intended for Germany/EU868.
 
-## Raspberry Pi vorbereiten
+## Prepare the Raspberry Pi
 
-SPI aktivieren:
+Enable SPI:
 
 ```bash
 sudo raspi-config nonint do_spi 0
 sudo usermod -aG spi,gpio "$USER"
 ```
 
-Danach neu anmelden oder neu starten und CE1 prüfen:
+Log in again or restart, then verify CE1:
 
 ```bash
 ls -l /dev/spidev0.1
 ```
 
-## Bauen und testen
+## Build and test
 
-Voraussetzung auf dem Entwicklungsrechner: .NET SDK 10.
+Requirement on the development computer: .NET SDK 10.
 
 ```powershell
 dotnet restore
@@ -46,13 +52,13 @@ dotnet build LoRaP2P.slnx --configuration Release
 dotnet test LoRaP2P.slnx --configuration Release
 ```
 
-Die Tests verwenden NUnit, einen Fake-Registertransport und ein Fake-Radio. Sie benötigen keine Funkhardware.
+The tests use NUnit, a fake register transport, and a fake radio. They do not require radio hardware.
 
-NuGet-Versionen werden zentral in [Directory.Packages.props](Directory.Packages.props)
-verwaltet. Die Tests verwenden NUnit 5.0.0, NUnit3TestAdapter 6.3.1 und
+NuGet versions are centrally managed in [Directory.Packages.props](Directory.Packages.props).
+The tests use NUnit 5.0.0, NUnit3TestAdapter 6.3.1, and
 Microsoft.NET.Test.Sdk 18.10.1.
 
-## Für Raspberry Pi OS 64-bit veröffentlichen
+## Publish for Raspberry Pi OS 64-bit
 
 ```powershell
 dotnet publish src/LoRaP2P.Console/LoRaP2P.Console.csproj `
@@ -62,43 +68,41 @@ dotnet publish src/LoRaP2P.Console/LoRaP2P.Console.csproj `
   --output artifacts/linux-arm64
 ```
 
-Den Inhalt von `artifacts/linux-arm64` auf den Pi übertragen und dort starten:
+Copy the contents of `artifacts/linux-arm64` to the Pi and start it there:
 
 ```bash
 chmod +x LoRaP2P.Console
 ./LoRaP2P.Console
 ```
 
-Alternative Konfiguration:
+Alternative configuration:
 
 ```bash
 ./LoRaP2P.Console --config /etc/LoRaP2P/radio.json
 ```
 
-Alle Felder, gültigen Werte, Wechselwirkungen sowie Duty-Cycle- und
-EU868-Hinweise stehen in der
-[Dokumentation der Funkkonfiguration](docs/radio-configuration.md).
+All fields, valid values, interactions, and duty-cycle and EU868 notes are in the
+[radio configuration documentation](docs/radio-configuration.md).
 
-Alternative P2P-Konfiguration:
+Alternative P2P configuration:
 
 ```bash
 ./LoRaP2P.Console --peer-config /var/lib/lorap2p/p2p.json
 ```
 
-Grundlegende Verdrahtung, Funkhardware, OLED und Taster prüfen:
+Check basic wiring, radio hardware, OLED, and buttons:
 
 ```bash
 ./LoRaP2P.Console --check
 ```
 
-Der Check führt die Reset-Sequenz aus, prüft die SPI-/CE1-Kommunikation anhand
-des SX1276-Versionsregisters, wendet die Funkkonfiguration an und kontrolliert
-den Standby-Status. Das OLED zeigt anschließend `RFM9x: Detected`. Die Taster
-auf GPIO5, GPIO6 und GPIO12 blenden `Ada`, `Fruit` beziehungsweise `Radio` ein.
-Der Test läuft bis Ctrl+C. Es wird kein Paket gesendet und keine Gegenstelle
-benötigt.
+The check runs the reset sequence, verifies SPI/CE1 communication using the
+SX1276 version register, applies the radio configuration, and checks standby
+status. The OLED then shows `RFM9x: Detected`. The buttons on GPIO5, GPIO6, and
+GPIO12 show `Ada`, `Fruit`, and `Radio`, respectively. The test runs until
+Ctrl+C. It sends no packet and requires no peer.
 
-## Befehle
+## Commands
 
 ```text
 probe
@@ -126,47 +130,48 @@ export-chat /home/pi/LoRaP2P/sessions/session.jsonl /home/pi/chat.html
 quit
 ```
 
-Mit einem einzelnen Bonnet lassen sich SPI, Register, Modemkonfiguration, FIFO und `TxDone` prüfen. Für einen echten Empfangstest wird ein zweiter kompatibler RFM9x-Transceiver mit identischem Funkprofil benötigt.
+With a single Bonnet, SPI, registers, modem configuration, FIFO, and `TxDone`
+can be checked. A second compatible RFM9x transceiver with an identical radio
+profile is required for a real reception test.
 
-## Raw-LoRa-P2P
+## Raw LoRa P2P
 
-Die adressierte P2P-Kommunikation verwendet versionierte Binärframes,
-16-Bit-Geräte-IDs, ACKs, maximal drei Retries und zufälligen Backoff. Das
-mitgelieferte `p2p.json` konfiguriert zunächst die lokale ID 1 und keine Peers.
-`peer id` und `peer add` speichern Änderungen atomar in dieser Datei.
+Addressed P2P communication uses versioned binary frames, 16-bit device IDs,
+ACKs, at most three retries, and random backoff. The supplied `p2p.json` initially
+configures local ID 1 and no peers. `peer id` and `peer add` save changes
+atomically to this file.
 
-`send-to` meldet eine Zustellung erst nach einem passenden Peer-ACK.
-`broadcast` erwartet kein ACK. `listen` läuft bis Ctrl+C und bestätigt gültige
-direkt adressierte Frames. Die aktuelle P2P-Version ist weder authentifiziert
-noch verschlüsselt; AES-GCM ist als spätere Ausbaustufe geplant.
+`send-to` reports delivery only after a matching peer ACK.
+`broadcast` expects no ACK. `listen` runs until Ctrl+C and acknowledges valid
+directly addressed frames. The current P2P version is neither authenticated nor
+encrypted; AES-GCM is planned as a later expansion.
 
-Im Normalbetrieb zeigt das OLED empfangene Broadcast-Texte ohne zusätzliche
-Statuszeile an. Der Text wird auf vier Zeilen mit jeweils bis zu 21 Zeichen
-umgebrochen. Längere Nachrichten scrollen einmal zeilenweise nach oben; danach
-bleibt die letzte Seite stehen. Eine neue Broadcast-Nachricht ersetzt die
-laufende Anzeige. Nicht unterstützte Zeichen werden als `?` dargestellt.
+In normal operation, the OLED shows received broadcast text without an
+additional status line. Text is wrapped to four lines of up to 21 characters
+each. Longer messages scroll upward one line at a time, then leave the last page
+displayed. A new broadcast message replaces the current display. Unsupported
+characters are shown as `?`.
 
-Beim ersten Versand oder Empfang öffnet die Anwendung je lokaler ID und
-Gegenstelle eine JSONL-Sitzungsdatei unter `~/LoRaP2P/sessions`. Jede Zeile
-enthält genau ein JSON-Objekt mit Zeitstempel, Richtung, IDs, Sequenznummer,
-Text- und Hexdarstellung sowie Zustell- oder Empfangsstatus. Die Datei bleibt
-bis zum Prozessende geöffnet. Broadcasts werden in einer separaten
-`peerbroadcast`-Sitzung gespeichert.
+On the first transmission or reception, the application opens a JSONL session
+file for each local ID and peer under `~/LoRaP2P/sessions`. Each line contains
+exactly one JSON object with timestamp, direction, IDs, sequence number, text
+and hexadecimal representation, and delivery or reception status. The file
+remains open until the process ends. Broadcasts are stored in a separate
+`peerbroadcast` session.
 
-`export-chat <session.jsonl> [output.html]` erzeugt daraus eine eigenständige
-HTML-Datei mit Chatblasen. Ohne Ausgabepfad liegt sie neben der JSONL-Datei.
-Der Export kann auch ausgeführt werden, solange die Sitzung noch geschrieben
-wird.
+`export-chat <session.jsonl> [output.html]` creates a standalone HTML file with
+chat bubbles. Without an output path, it is placed beside the JSONL file.
+Export can also run while the session is still being written.
 
-Wire-Format, Architektur, Betrieb und Tests sind unter
-[docs/p2p/README.md](docs/p2p/README.md) dokumentiert.
+Wire format, architecture, operation, and tests are documented in
+[docs/p2p/README.md](docs/p2p/README.md).
 
-## Sprache auf dem Bonnet-Display
+## Speech on the Bonnet Display
 
-Das separate CLI-Tool `LoRaP2P.SpeechDisplay` nimmt ein ALSA-Mikrofon auf,
-erkennt Sprache offline mit Vosk und zeigt den Text zeilenweise nach oben
-scrollend auf dem Bonnet-OLED. Es verwendet weder SPI noch das Funkmodul.
-Ein externes Mikrofon, beispielsweise ein USB-Mikrofon, ist erforderlich.
+The separate `LoRaP2P.SpeechDisplay` CLI tool captures an ALSA microphone,
+recognizes speech offline with Vosk, and displays text scrolling upward one
+line at a time on the Bonnet OLED. It uses neither SPI nor the radio module.
+An external microphone, such as a USB microphone, is required.
 
 ```powershell
 dotnet publish src/LoRaP2P.SpeechDisplay/LoRaP2P.SpeechDisplay.csproj `
@@ -176,9 +181,9 @@ dotnet publish src/LoRaP2P.SpeechDisplay/LoRaP2P.SpeechDisplay.csproj `
   --output artifacts/speech-display/linux-arm64
 ```
 
-Die native ARM64-Bibliothek `libvosk.so` wird automatisch mit veröffentlicht.
-Ohne `--model` lädt das Tool beim ersten Start das deutsche Standardmodell
-automatisch nach `~/LoRaP2P/models` und verwendet es danach aus dem Cache:
+The native ARM64 library `libvosk.so` is published automatically.
+Without `--model`, the tool automatically downloads the default German model
+to `~/LoRaP2P/models` on first start and uses it from the cache thereafter:
 
 ```bash
 ./LoRaP2P.SpeechDisplay \
@@ -186,24 +191,23 @@ automatisch nach `~/LoRaP2P/models` und verwendet es danach aus dem Cache:
   --scroll-ms 1000
 ```
 
-Die vollständige Einrichtung, Mikrofonprüfung und Fehlerdiagnose stehen in
+Complete setup, microphone checks, and troubleshooting are documented in
 [docs/speech-display.md](docs/speech-display.md). `--model-url <https-url>`
-wählt ein anderes Modellarchiv; `--model <path>` verwendet ein lokales Modell
-ohne Download. Nur die erstmalige Modellbereitstellung benötigt Internet.
-Sprachmodell und Linux-Systembibliotheken sind nicht Teil der
-selbstenthaltenen .NET-Ausgabe.
+selects another model archive; `--model <path>` uses a local model without
+downloading. Only initial model provisioning requires Internet. The speech model
+and Linux system libraries are not part of the self-contained .NET output.
 
-## Projektstruktur
+## Project structure
 
 ```text
-src/LoRaP2P.Console/Commands    CommandLineParser-Verben der interaktiven Konsole
-src/LoRaP2P.Console             Konfiguration und Anwendungskomposition
-src/LoRaP2P.Display.RadioBonnet  Gemeinsamer SSD1306-Treiber, Font und Textlayout
-src/LoRaP2P.SpeechDisplay        ALSA-Mikrofon, Vosk und scrollende OLED-Ausgabe
-src/LoRaP2P.Protocol            P2P-Frames, ACKs, Retries, Peers und Statistiken
-src/LoRaP2P.Radio.Rfm9x         Hardwaretransport und SX1276/RFM95-Treiber
-tests/LoRaP2P.Console.Tests     Hardwarefreie Tests der Kommandoverarbeitung
-tests/LoRaP2P.Protocol.Tests    Hardwarefreie Tests des P2P-Protokolls
-tests/LoRaP2P.Radio.Rfm9x.Tests Hardwarefreie Tests des Radiotreibers
-docs/PRD.md                     Produktanforderungen und Ausbaustufen
+src/LoRaP2P.Console/Commands    CommandLineParser verbs for the interactive console
+src/LoRaP2P.Console             Configuration and application composition
+src/LoRaP2P.Display.RadioBonnet Shared SSD1306 driver, font, and text layout
+src/LoRaP2P.SpeechDisplay       ALSA microphone, Vosk, and scrolling OLED output
+src/LoRaP2P.Protocol             P2P frames, ACKs, retries, peers, and statistics
+src/LoRaP2P.Radio.Rfm9x          Hardware transport and SX1276/RFM95 driver
+tests/LoRaP2P.Console.Tests     Hardware-free command-processing tests
+tests/LoRaP2P.Protocol.Tests    Hardware-free P2P protocol tests
+tests/LoRaP2P.Radio.Rfm9x.Tests Hardware-free radio-driver tests
+docs/PRD.md                     Product requirements and expansion stages
 ```

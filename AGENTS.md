@@ -21,6 +21,6 @@
 
 ## Validation
 
-- Run the restore, Release build, and hardware-free NUnit commands documented in [README.md](README.md#bauen-und-testen).
+- Run the restore, Release build, and hardware-free NUnit commands documented in [README.md](README.md#build-and-test).
 - For publish or platform changes, also run the documented self-contained `linux-arm64` publish command.
-- Hardware validation is separate from unit tests; follow [docs/PRD.md](docs/PRD.md#10-akzeptanzkriterien) and report when Pi/RFM95 hardware was unavailable.
+- Hardware validation is separate from unit tests; follow [docs/PRD.md](docs/PRD.md#10-acceptance-criteria) and report when Pi/RFM95 hardware was unavailable.

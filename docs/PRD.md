@@ -1,213 +1,211 @@
-# Product Requirements Document: RFM95 Funk-Client als LoRaWAN-Basis
+# Product Requirements Document: RFM95 Radio Client as LoRaWAN Foundation
 
-## 1. Dokumentstatus
+## 1. Document status
 
-| Feld | Wert |
+| Field | Value |
 | --- | --- |
-| Produkt | LoRaP2P Console |
-| Version | 1.0 (Raw-LoRa-PoC) |
-| Status | Implementiert, Hardwarevalidierung ausstehend |
-| Zielplattform | Raspberry Pi 3B+, Raspberry Pi OS 64-bit, .NET 10 |
-| Funkhardware | Adafruit LoRa Radio Bonnet, RFM95W 868/915 MHz |
-| Einsatzregion | Deutschland / EU868 |
+| Product | LoRaP2P Console |
+| Version | 1.0 (Raw LoRa PoC) |
+| Status | Implemented, hardware validation pending |
+| Target platform | Raspberry Pi 3B+, Raspberry Pi OS 64-bit, .NET 10 |
+| Radio hardware | Adafruit LoRa Radio Bonnet, RFM95W 868/915 MHz |
+| Operating region | Germany / EU868 |
 
-## 2. Ausgangslage
+## 2. Background
 
-Ein Raspberry Pi 3B+ mit Adafruit LoRa Radio Bonnet soll über eine .NET-10-Konsolenanwendung angesprochen werden. Als technische Vorlage dient `KiwiBryn/RFM9XLoRa-Net`. Dieses Projekt enthält brauchbare SX1276/RFM95-Register- und FIFO-Logik, basiert aber auf archivierten UWP-APIs und implementiert nur Raw LoRa, nicht LoRaWAN.
+An Adafruit LoRa Radio Bonnet on a Raspberry Pi 3B+ is to be controlled through a .NET 10 console application. `KiwiBryn/RFM9XLoRa-Net` serves as the technical reference. That project contains useful SX1276/RFM95 register and FIFO logic, but is based on archived UWP APIs and implements only Raw LoRa, not LoRaWAN.
 
-Version 1 validiert deshalb zuerst den direkten SPI-/GPIO-Zugriff und den Funkbetrieb.
+Version 1 therefore first validates direct SPI/GPIO access and radio operation.
 
-## 3. Produktziel
+## 3. Product goal
 
-Bereitstellung eines testbaren .NET-10-RFM95-Treibers und einer interaktiven Konsole, mit denen Entwickler:
+Provide a testable .NET 10 RFM95 driver and interactive console that lets developers:
 
-- das RFM95W über SPI0/CE1 erkennen und konfigurieren,
-- EU868-konforme PoC-Parameter validieren,
-- Raw-LoRa-Payloads senden und empfangen,
-- Register und Funkstatus diagnostizieren,
-- Treiberverhalten ohne Raspberry-Pi-Hardware per NUnit prüfen
+- detect and configure the RFM95W over SPI0/CE1,
+- validate EU868-compliant PoC parameters,
+- send and receive Raw LoRa payloads,
+- diagnose registers and radio status,
+- verify driver behavior with NUnit without Raspberry Pi hardware
 
-## 4. Nichtziele von Version 1
+## 4. Version 1 non-goals
 
-- Kein LoRaWAN OTAA oder ABP
-- Keine LoRaWAN-Verschlüsselung, MIC-Berechnung oder Session Keys
-- Keine ADR- oder MAC-Command-Verarbeitung
-- Keine persistenten Frame Counter oder Nonces
-- Kein LoRaWAN-Gateway und kein Network Server
-- Keine Mikrofon- oder Spracherkennung im Funk-Client; das separate
-  `LoRaP2P.SpeechDisplay` verwendet nur Mikrofon und OLED.
-- Kein systemd-Dienst und keine unbeaufsichtigte Sensoranwendung
-- Keine Bestätigung des Funkempfangs mit nur einem Transceiver
+- No LoRaWAN OTAA or ABP
+- No LoRaWAN encryption, MIC calculation, or session keys
+- No ADR or MAC command processing
+- No persistent frame counters or nonces
+- No LoRaWAN gateway or network server
+- No microphone or speech recognition in the radio client; the separate
+  `LoRaP2P.SpeechDisplay` uses only the microphone and OLED.
+- No systemd service or unattended sensor application
+- No confirmation of radio reception with only one transceiver
 
-## 5. Benutzer und Anwendungsfälle
+## 5. Users and use cases
 
-### Primärer Benutzer
+### Primary user
 
-Entwickler oder Maker mit C#/.NET-Erfahrung, Raspberry Pi 3B+ und Adafruit RFM95W Bonnet.
+Developer or maker with C#/.NET experience, Raspberry Pi 3B+, and Adafruit RFM95W Bonnet.
 
-### Kernabläufe
+### Core flows
 
-1. Benutzer aktiviert SPI, startet die Anwendung und erhält eine erfolgreiche Chip-Erkennung (`0x12`).
-2. Benutzer prüft das aktive EU868-Profil und ausgewählte SX1276-Register.
-3. Benutzer sendet einen Text- oder Hex-Payload und sieht `TxDone` sowie Time-on-Air.
-4. Benutzer wartet mit einem konfigurierbaren Timeout auf ein Raw-LoRa-Paket.
-5. Benutzer ändert Frequenz, Spreading Factor, Bandbreite oder Leistung innerhalb der erlaubten Grenzen.
-6. Entwickler führt sämtliche Treibertests auf einem Windows-Rechner ohne Funkhardware aus.
+1. User enables SPI, starts the application, and receives successful chip detection (`0x12`).
+2. User checks the active EU868 profile and selected SX1276 registers.
+3. User sends a text or hexadecimal payload and sees `TxDone` and time-on-air.
+4. User waits for a Raw LoRa packet with a configurable timeout.
+5. User changes frequency, spreading factor, bandwidth, or power within the permitted limits.
+6. Developer runs all driver tests on a Windows computer without radio hardware.
 
-## 6. Hardware- und Plattformanforderungen
+## 6. Hardware and platform requirements
 
-| Funktion | Zuordnung |
+| Function | Assignment |
 | --- | --- |
 | SPI-Bus | SPI0 |
 | Chip Select | CE1 / Chip-Select 1 |
-| Reset | BCM GPIO25, aktiv Low |
-| DIO0 / IRQ | BCM GPIO22, steigende Flanke |
-| DIO1 | BCM GPIO23, für Version 1 nicht verwendet |
-| DIO2 | BCM GPIO24, für Version 1 nicht verwendet |
-| Betriebssystem | Raspberry Pi OS 64-bit |
-| Runtime | selbstenthaltenes `linux-arm64`-Publish von .NET 10 |
+| Reset | BCM GPIO25, active Low |
+| DIO0 / IRQ | BCM GPIO22, rising edge |
+| DIO1 | BCM GPIO23, not used in version 1 |
+| DIO2 | BCM GPIO24, not used in version 1 |
+| Operating system | Raspberry Pi OS 64-bit |
+| Runtime | self-contained `linux-arm64` publish of .NET 10 |
 
-Vor jedem Sendeversuch muss eine auf 868 MHz abgestimmte Antenne angeschlossen sein. Obwohl das RFM95W softwareseitig 868 und 915 MHz unterstützt, verwendet dieses Produkt in Deutschland ausschließlich EU868-Defaults.
+An antenna tuned to 868 MHz must be connected before every transmission attempt. Although the RFM95W supports 868 and 915 MHz in software, this product uses EU868 defaults exclusively in Germany.
 
-## 7. Funktionale Anforderungen
+## 7. Functional requirements
 
-### FR-001: Konfiguration
+### FR-001: Configuration
 
-- Anwendung MUSS Konfiguration aus `appsettings.json` laden.
-- Alternativer Pfad MUSS über `--config <path>` möglich sein.
-- `--check` MUSS Reset, SPI-Kommunikation, Chipversion, Konfiguration,
-  Standby-Status, OLED und die drei Bonnet-Taster prüfen und bis zum Abbruch
-  weiterlaufen.
-- Standardprofil MUSS 869,525 MHz, SF7, BW125, CR 4/5, Payload-CRC,
-  Syncword `0x34`, 14 dBm und 10 % Duty Cycle verwenden.
-- Frequenzen außerhalb 863 bis 870 MHz MÜSSEN abgelehnt werden.
-- Sendeleistungen außerhalb 2 bis 17 dBm MÜSSEN abgelehnt werden.
-- Reset- und DIO0-Pin MÜSSEN unterschiedlich und nicht negativ sein.
-- Semantik, Wertebereiche, Wechselwirkungen und regulatorische Grenzen der
-  Felder sind in der
-  [Dokumentation der Funkkonfiguration](radio-configuration.md) beschrieben.
+- Application MUST load configuration from `appsettings.json`.
+- An alternative path MUST be available through `--config <path>`.
+- `--check` MUST verify reset, SPI communication, chip version, configuration,
+  standby status, OLED, and the three Bonnet buttons, and continue until
+  interrupted.
+- Default profile MUST use 869.525 MHz, SF7, BW125, CR 4/5, payload CRC,
+  sync word `0x34`, 14 dBm, and 10% duty cycle.
+- Frequencies outside 863 to 870 MHz MUST be rejected.
+- Transmission power outside 2 to 17 dBm MUST be rejected.
+- Reset and DIO0 pins MUST be different and non-negative.
+- Field semantics, ranges, interactions, and regulatory limits are described in
+  the [radio configuration documentation](radio-configuration.md).
 
-### FR-002: Hardwaretransport
+### FR-002: Hardware transport
 
-- SPI MUSS Mode 0, 8 Datenbits, 5 MHz und Hardware-Chip-Select verwenden.
-- Register-Reads MÜSSEN als Full-Duplex-Transfer mit Adressbyte und Dummy-Bytes erfolgen.
-- Register-Writes MÜSSEN das Write-Bit der Adresse setzen.
-- Gleichzeitige SPI-Transfers MÜSSEN serialisiert werden.
-- DIO0-Callbacks DÜRFEN keine SPI-Operationen durchführen; sie signalisieren nur die wartende Operation.
+- SPI MUST use mode 0, 8 data bits, 5 MHz, and hardware chip select.
+- Register reads MUST use full-duplex transfers with an address byte and dummy bytes.
+- Register writes MUST set the address write bit.
+- Concurrent SPI transfers MUST be serialized.
+- DIO0 callbacks MUST NOT perform SPI operations; they only signal the waiting operation.
 
-### FR-003: Reset und Probe
+### FR-003: Reset and probe
 
-- Reset MUSS GPIO25 mindestens 1 ms Low setzen und anschließend mindestens 5 ms Initialisierungszeit geben.
-- Probe MUSS Register `0x42` lesen.
-- Nur Wert `0x12` gilt als erkannter SX1276/RFM95.
-- Abweichungen MÜSSEN eine verständliche Fehlermeldung erzeugen.
+- Reset MUST set GPIO25 Low for at least 1 ms and then allow at least 5 ms for initialization.
+- Probe MUST read register `0x42`.
+- Only value `0x12` counts as a detected SX1276/RFM95.
+- Deviations MUST produce an understandable error message.
 
-### FR-004: Funkkonfiguration
+### FR-004: Radio configuration
 
-- Treiber MUSS Frequenz-, PA-, LNA-, Modem-, Präambel-, CRC-, IQ- und Syncword-Register setzen.
-- Konfiguration MUSS im Sleep-Modus beginnen und im Standby-Modus enden.
-- Low-Data-Rate-Optimization MUSS anhand der Symboldauer gesetzt werden.
+- Driver MUST set frequency, PA, LNA, modem, preamble, CRC, IQ, and sync word registers.
+- Configuration MUST begin in sleep mode and end in standby mode.
+- Low-data-rate optimization MUST be set based on symbol duration.
 
-### FR-005: Senden
+### FR-005: Transmission
 
-- Payloadlänge MUSS 1 bis 255 Bytes betragen.
-- FIFO-Adresse, Payload und Payloadlänge MÜSSEN vor TX gesetzt werden.
-- DIO0 MUSS auf `TxDone` gemappt werden.
-- TX MUSS durch Timeout und Cancellation abbrechbar sein.
-- Nach Erfolg oder Fehler MUSS das Radio in Standby zurückkehren.
-- Erfolgsausgabe MUSS `TxDone` heißen und darf keinen Empfang durch eine Gegenstelle behaupten.
-- Time-on-Air und konservative Sendepause gemäß konfiguriertem Duty Cycle MÜSSEN berechnet werden.
+- Payload length MUST be 1 to 255 bytes.
+- FIFO address, payload, and payload length MUST be set before TX.
+- DIO0 MUST be mapped to `TxDone`.
+- TX MUST be cancellable through timeout and cancellation.
+- After success or failure, the radio MUST return to standby.
+- Success output MUST be named `TxDone` and must not claim reception by a peer.
+- Time-on-air and a conservative transmission pause according to the configured duty cycle MUST be calculated.
 
-### FR-006: Empfangen
+### FR-006: Reception
 
-- Anwendung MUSS einen einzelnen Empfang mit Timeout starten können.
-- DIO0 MUSS auf `RxDone` gemappt werden.
-- Payload MUSS über `FifoRxCurrentAddress` und `RxByteCount` gelesen werden.
-- CRC-Status, Packet RSSI und Packet SNR MÜSSEN ausgegeben werden.
-- Ein Timeout MUSS ohne unbehandelten Fehler enden.
-- Nach Abschluss MUSS das Radio in Standby zurückkehren.
+- Application MUST be able to start a single reception with a timeout.
+- DIO0 MUST be mapped to `RxDone`.
+- Payload MUST be read through `FifoRxCurrentAddress` and `RxByteCount`.
+- CRC status, packet RSSI, and packet SNR MUST be output.
+- A timeout MUST end without an unhandled error.
+- After completion, the radio MUST return to standby.
 
-### FR-007: Interaktive Konsole
+### FR-007: Interactive console
 
-Folgende Befehle MÜSSEN vorhanden sein:
+The following commands MUST be available:
 
-| Befehl | Verhalten |
+| Command | Behavior |
 | --- | --- |
-| `probe` | Chipversion prüfen |
-| `status` | Modus, IRQ und Funkprofil ausgeben |
-| `reset` | Hardware zurücksetzen und Profil neu anwenden |
-| `configure frequency <MHz>` | EU868-Frequenz setzen |
-| `configure sf <7-12>` | Spreading Factor setzen |
-| `configure bandwidth <125\|250\|500>` | Bandbreite setzen |
-| `configure power <2-17>` | Leistung setzen |
-| `send text <value>` | UTF-8-Payload senden |
-| `send hex <bytes>` | Binärpayload senden |
-| `receive [seconds]` | Ein Paket oder Timeout abwarten |
-| `register read <address> [count]` | Register lesen |
-| `register dump` | Register `0x01` bis `0x42` ausgeben |
-| `quit` | Anwendung sauber beenden |
+| `probe` | Check chip version |
+| `status` | Show mode, IRQ, and radio profile |
+| `reset` | Reset hardware and reapply profile |
+| `configure frequency <MHz>` | Set EU868 frequency |
+| `configure sf <7-12>` | Set spreading factor |
+| `configure bandwidth <125\|250\|500>` | Set bandwidth |
+| `configure power <2-17>` | Set power |
+| `send text <value>` | Send UTF-8 payload |
+| `send hex <bytes>` | Send binary payload |
+| `receive [seconds]` | Wait for a packet or timeout |
+| `register read <address> [count]` | Read registers |
+| `register dump` | Show registers `0x01` through `0x42` |
+| `quit` | Exit the application cleanly |
 
-Eine generische Register-Schreibfunktion ist absichtlich nicht Teil des normalen CLI, um versehentliche unzulässige Funkkonfigurationen zu vermeiden.
+ A generic register-write function is intentionally not part of the normal CLI, to avoid accidental invalid radio configurations.
 
-## 8. Nichtfunktionale Anforderungen
+## 8. Nonfunctional requirements
 
-### Separates Sprach-CLI
+### Separate speech CLI
 
-`src/LoRaP2P.SpeechDisplay` nimmt Sprache über ein externes ALSA-Mikrofon
-auf und erkennt sie lokal mit Vosk. Bestätigte Textabschnitte werden auf dem
-Bonnet-OLED mit Wortumbruch zeilenweise nach oben gescrollt. Neue Abschnitte
-werden angehängt. Das Tool greift weder auf SPI noch auf `ILoraRadio` zu.
-Ohne lokalen `--model`-Override wird das über `--model-url` gewählte Modell-ZIP
-automatisch in den Benutzerordner geladen und für spätere Offline-Starts
-zwischengespeichert. Standard ist `vosk-model-small-de-0.15` vom Vosk-Anbieter.
+`src/LoRaP2P.SpeechDisplay` captures speech through an external ALSA microphone
+and recognizes it locally with Vosk. Confirmed text segments are wrapped and
+scrolled upward line by line on the Bonnet OLED. New segments are appended. The
+tool accesses neither SPI nor `ILoraRadio`. Without a local `--model` override,
+the model ZIP selected by `--model-url` is automatically downloaded to the user
+directory and cached for later offline starts. The default is
+`vosk-model-small-de-0.15` from the Vosk provider.
 
-`src/LoRaP2P.Display.RadioBonnet` kapselt die gemeinsame SSD1306-Ansteuerung,
-GPIO4-Reset, Font, Framebuffer und Textlayout. Funkkonsole und Sprach-CLI
-nutzen dieses Projekt; Taster und Broadcast-Scrollsteuerung bleiben in der
-Funkkonsole. Beide Programme dürfen nicht gleichzeitig dasselbe Display
-verwenden. Einrichtung und Hardwareprüfung stehen in
+`src/LoRaP2P.Display.RadioBonnet` encapsulates shared SSD1306 control, GPIO4
+reset, font, framebuffer, and text layout. The radio console and speech CLI use
+this project; buttons and broadcast scroll control remain in the radio console.
+Both programs must not use the same display simultaneously. Setup and hardware
+checks are documented in
 [speech-display.md](speech-display.md).
 
-### NFR-001: Testbarkeit
+### NFR-001: Testability
 
-- Radiozustandsmaschine MUSS ausschließlich von `IRfm9xRegisterTransport` abhängen.
-- Konsolenbefehle MÜSSEN ausschließlich über `ILoraRadio` testbar sein.
-- Unit-Tests MÜSSEN ohne GPIO, SPI oder Raspberry Pi ausführbar sein.
-- NUnit 5.0.0, NUnit3TestAdapter 6.3.1 und Microsoft.NET.Test.Sdk 18.10.1
-  werden verwendet. NuGet-Versionen werden zentral in `Directory.Packages.props`
-  verwaltet.
+- Radio state machine MUST depend exclusively on `IRfm9xRegisterTransport`.
+- Console commands MUST be testable exclusively through `ILoraRadio`.
+- Unit tests MUST run without GPIO, SPI, or Raspberry Pi.
+- NUnit 5.0.0, NUnit3TestAdapter 6.3.1, and Microsoft.NET.Test.Sdk 18.10.1
+  are used. NuGet versions are centrally managed in `Directory.Packages.props`.
 
-### NFR-002: Robustheit
+### NFR-002: Robustness
 
-- Keine Funkoperation darf unbegrenzt blockieren.
-- Cancellation und Timeout müssen den Radiozustand wiederherstellen.
-- Transport und Radio müssen deterministisch freigegeben werden.
-- SPI-Zugriffe dürfen nicht parallel erfolgen.
+- No radio operation may block indefinitely.
+- Cancellation and timeout must restore radio state.
+- Transport and radio must be released deterministically.
+- SPI access must not occur in parallel.
 
-### NFR-003: Sicherheit
+### NFR-003: Security
 
-- Version 1 enthält keine Schlüssel oder Geheimnisse.
-- Künftige AppKeys dürfen weder im Repository noch in Logs oder Standard-JSON gespeichert werden.
-- Betrieb soll über `spi`- und `gpio`-Gruppen erfolgen, nicht dauerhaft als Root.
+- Version 1 contains no keys or secrets.
+- Future AppKeys must not be stored in the repository, logs, or default JSON.
+- Operation should use `spi` and `gpio` groups, not run permanently as root.
 
-### NFR-004: Wartbarkeit
+### NFR-004: Maintainability
 
-- Hardwaretransport, RFM95-Treiber, Konsolen-UI und Tests bleiben getrennt.
-- `ILoraRadio` enthält keine LoRaWAN-spezifischen Typen.
-- Build-Warnungen werden als Fehler behandelt.
+- Hardware transport, RFM95 driver, console UI, and tests remain separate.
+- `ILoraRadio` contains no LoRaWAN-specific types.
+- Build warnings are treated as errors.
 
-## 9. Architektur
+## 9. Architecture
 
 ```mermaid
 flowchart TD
     PROGRAM[Program / StartupOptions]
 
-    PROGRAM -->|normaler Start| CLI[InteractiveConsole]
+    PROGRAM -->|normal start| CLI[InteractiveConsole]
     PROGRAM -->|--check| CHECK[RadioHardwareCheck]
     PROGRAM --> P2P_CONFIG[P2pConfigurationStore]
 
     CLI --> PARSER[ConsoleCommandParser]
-    PARSER --> VERBS[CommandLineParser-Verben]
+    PARSER --> VERBS[CommandLineParser verbs]
     VERBS --> API[ILoraRadio]
     VERBS --> SESSION[P2pConsoleSession]
     SESSION --> P2P_NODE[P2pNode]
@@ -230,10 +228,10 @@ flowchart TD
 
     PI --> SPI[SPI0 / CE1]
     PI --> RESET[GPIO25 / Reset]
-    PI -->|normaler Betrieb| DIO0[GPIO22 / DIO0]
+    PI -->|normal operation| DIO0[GPIO22 / DIO0]
 
     BONNET_API --> BONNET[SystemRadioBonnetCheckUi]
-    BONNET --> OLED[SSD1306 über I2C1]
+    BONNET --> OLED[SSD1306 over I2C1]
     BONNET --> DISPLAY_RESET[GPIO4 / Display-Reset]
     BONNET --> BUTTONS[GPIO5, GPIO6, GPIO12]
 
@@ -242,153 +240,161 @@ flowchart TD
     FAKE_TRANSPORT --> RADIO_TESTS[Radio-Tests]
 ```
 
-## 10. Akzeptanzkriterien
+## 10. Acceptance criteria
 
-### Ohne Hardware
+### Without hardware
 
-- `dotnet restore` ist erfolgreich.
-- `dotnet build LoRaP2P.slnx --configuration Release` ist ohne Warnungen erfolgreich.
-- `dotnet test LoRaP2P.slnx --configuration Release` führt alle NUnit-Tests erfolgreich aus.
-- Kommando-Parsing und alle Verben sind ohne Funkhardware getestet.
-- Frequenzkonvertierung, EU868-Validierung, Time-on-Air, Registerkonfiguration, TX, RX und Reset/Probe sind getestet.
-- `linux-arm64` Self-contained Publish ist erfolgreich.
+- `dotnet restore` succeeds.
+- `dotnet build LoRaP2P.slnx --configuration Release` succeeds without warnings.
+- `dotnet test LoRaP2P.slnx --configuration Release` runs all NUnit tests successfully.
+- Command parsing and all verbs are tested without radio hardware.
+- Frequency conversion, EU868 validation, time-on-air, register configuration, TX, RX, and reset/probe are tested.
+- `linux-arm64` self-contained publish succeeds.
 
-### Mit einem Bonnet
+### With one Bonnet
 
-- `/dev/spidev0.1` ist vorhanden.
-- Anwendung liest Chipversion `0x12`.
-- `status` zeigt 869,525 MHz, SF7, BW125 und 14 dBm.
-- `send text ping` endet über DIO0 mit `TxDone`.
-- Timeout und Ctrl+C lassen das Radio im Standby-Modus zurück.
+- `/dev/spidev0.1` is present.
+- Application reads chip version `0x12`.
+- `status` shows 869.525 MHz, SF7, BW125, and 14 dBm.
+- `send text ping` ends with `TxDone` through DIO0.
+- Timeout and Ctrl+C leave the radio in standby mode.
 
-### Mit zweitem RFM9x-Gerät
+### With a second RFM9x device
 
-- Beide Geräte verwenden identische Frequenz-, SF-, BW-, CR-, Präambel-, CRC- und Syncword-Werte.
-- Text- und Binärpayloads werden unverändert empfangen.
-- CRC-Status, RSSI und SNR werden plausibel ausgegeben.
-- Abweichende Frequenz oder abweichendes Syncword führen reproduzierbar zum Timeout.
+- Both devices use identical frequency, SF, BW, CR, preamble, CRC, and sync word values.
+- Text and binary payloads are received unchanged.
+- CRC status, RSSI, and SNR are output plausibly.
+- A different frequency or sync word reproducibly causes a timeout.
 
-## 11. Risiken und Gegenmaßnahmen
+## 11. Risks and mitigations
 
-| Risiko | Gegenmaßnahme |
+| Risk | Mitigation |
 | --- | --- |
-| `TxDone` wird als erfolgreicher Empfang missverstanden | CLI und Dokumentation unterscheiden explizit zwischen internem TX-Abschluss und Funkempfang |
-| Falsche Antenne oder Frequenz | EU868-Validierung und deutlicher Antennenhinweis |
-| DIO0-Flanke fehlt | Konfigurierbarer Timeout, Standby-Recovery und Diagnose über Registerdump |
-| Ursprungsprojekt ist archiviert | Nur Registerwissen übernehmen; moderne, eigene Transport- und Zustandsarchitektur |
-| Ein Bonnet reicht nicht für End-to-End-Test | Zweites RFM9x-Gerät als definierter Folgemeilenstein |
-| RFM95 ist kein LoRaWAN-Gateway | Später echten SX1302/SX1303-Multichannel-Gateway einsetzen |
+| `TxDone` is misunderstood as successful reception | CLI and documentation explicitly distinguish internal TX completion from radio reception |
+| Incorrect antenna or frequency | EU868 validation and clear antenna warning |
+| DIO0 edge is missing | Configurable timeout, standby recovery, and register-dump diagnostics |
+| Reference project is archived | Reuse register knowledge only; use a modern, independent transport and state architecture |
+| One Bonnet is insufficient for an end-to-end test | Second RFM9x device as a defined follow-up milestone |
+| RFM95 is not a LoRaWAN gateway | Use a real SX1302/SX1303 multichannel gateway later |
 
-## 12. Raw-LoRa-Zwei-Wege-Kommunikation
+## 12. Raw LoRa two-way communication
 
-Ein kleines P2P-Protokoll oberhalb von `ILoraRadio` ermöglicht die direkte
-Kommunikation zwischen zwei Raspberry Pis mit jeweils einem kompatiblen
-RFM9x-Transceiver. Gateway, Network Server, Internetverbindung und
-LoRaWAN-Provisionierung werden dafür nicht benötigt.
+A small P2P protocol above `ILoraRadio` enables direct communication between two
+Raspberry Pis, each with a compatible RFM9x transceiver. No gateway, network
+server, Internet connection, or LoRaWAN provisioning is required.
 
-**Implementierungsstatus:** Protokollkern, Persistenz, Konsolenbefehle und
-hardwarefreie Tests sind implementiert. Die bidirektionale Hardwareabnahme mit
-zwei RFM9x-Geräten ist noch offen. Die optionale AES-GCM-Ausbaustufe ist nicht
-implementiert.
+**Implementation status:** Protocol core, persistence, console commands, and
+hardware-free tests are implemented. Bidirectional hardware acceptance with two
+RFM9x devices is still pending. The optional AES-GCM expansion is not
+implemented.
 
-Die konkretisierte Spezifikation, Zielarchitektur, Umsetzungsschritte sowie
-Test- und Betriebsplanung stehen unter
+The detailed specification, target architecture, implementation steps, and
+test and operations plan are in
 [docs/p2p/README.md](p2p/README.md).
 
-### 12.1 Gemeinsames Funkprofil
+### 12.1 Shared radio profile
 
-Beide Geräte MÜSSEN dieselben Werte für Frequenz, Spreading Factor, Bandbreite, Coding Rate, Präambel, Syncword, Header-Modus, Payload-CRC und IQ-Einstellung verwenden. Der Funkbetrieb bleibt halbduplex: Ein Gerät kann zu einem Zeitpunkt entweder senden oder empfangen.
+Both devices MUST use the same values for frequency, spreading factor,
+bandwidth, coding rate, preamble, sync word, header mode, payload CRC, and IQ
+setting. Radio operation remains half-duplex: a device can either transmit or
+receive at a given time.
 
-### 12.2 P2P-Frame
+### 12.2 P2P frame
 
-Jede Nachricht MUSS einen versionierten binären Protokollkopf enthalten:
+Each message MUST contain a versioned binary protocol header:
 
-| Feld | Zweck |
+| Field | Purpose |
 | --- | --- |
-| Protokollversion | Erlaubt spätere kompatible Erweiterungen |
-| Nachrichtentyp | `Data`, `Ack` oder `Error` |
-| Absender-ID | Identifiziert das sendende Gerät |
-| Empfänger-ID | Identifiziert Zielgerät oder Broadcast |
-| Sequenznummer | Ordnet ACKs zu und erkennt Duplikate |
-| Payloadlänge | Validiert den Frame vor Verarbeitung |
-| Payload | Anwendungsdaten innerhalb der RFM95-Nutzlastgrenze |
+| Protocol version | Allows future compatible extensions |
+| Message type | `Data`, `Ack`, or `Error` |
+| Sender ID | Identifies the sending device |
+| Recipient ID | Identifies the target device or broadcast |
+| Sequence number | Associates ACKs and detects duplicates |
+| Payload length | Validates the frame before processing |
+| Payload | Application data within the RFM95 payload limit |
 
-Mehrbyte-Felder MÜSSEN eine festgelegte Byte-Reihenfolge verwenden. Frames mit unbekannter Version, falscher Länge, unbekanntem Nachrichtentyp oder unpassender Empfänger-ID MÜSSEN verworfen werden.
+Multi-byte fields MUST use a defined byte order. Frames with an unknown version,
+incorrect length, unknown message type, or mismatched recipient ID MUST be
+discarded.
 
-### 12.3 Zustellung und Bestätigung
+### 12.3 Delivery and acknowledgement
 
-1. Der Sender wechselt nach einem `Data`-Frame sofort in den Empfangsmodus.
-2. Der Empfänger beantwortet einen gültigen, direkt adressierten Frame nach einer kurzen definierten Wartezeit mit einem `Ack`, das Absender-ID und Sequenznummer bestätigt.
-3. Bleibt das ACK aus, MUSS der Sender bis zu einer konfigurierbaren Höchstzahl erneut senden.
-4. Zwischen Wiederholungen MUSS ein zufälliger Backoff innerhalb eines konfigurierbaren Bereichs liegen, um wiederholte Kollisionen zu reduzieren.
-5. EU868-Time-on-Air und Duty-Cycle-Wartezeiten MÜSSEN auch für ACKs und Retries eingehalten werden.
-6. Nach Erreichen der Retry-Grenze MUSS die Nachricht als nicht zugestellt gemeldet werden.
+1. The sender switches to receive mode immediately after a `Data` frame.
+2. After a short defined wait, the recipient answers a valid directly addressed frame with an `Ack` confirming sender ID and sequence number.
+3. If the ACK is absent, the sender MUST retransmit up to a configurable maximum.
+4. Between retries, a random backoff within a configurable range MUST be used to reduce repeated collisions.
+5. EU868 time-on-air and duty-cycle waits MUST also be observed for ACKs and retries.
+6. After the retry limit is reached, the message MUST be reported as undelivered.
 
-Ein ACK bestätigt nur den Empfang des P2P-Frames durch das Zielgerät. Es bestätigt nicht, dass die Nutzlast fachlich verarbeitet wurde.
+An ACK confirms only reception of the P2P frame by the target device. It does not
+confirm that the payload was processed by the application.
 
-### 12.4 Duplikate und Reihenfolge
+### 12.4 Duplicates and ordering
 
-- Jedes Gerät MUSS zuletzt empfangene Sequenznummern je Absender für ein begrenztes Zeitfenster speichern.
-- Ein wiederholter `Data`-Frame MUSS erneut bestätigt, darf aber nicht erneut an die Anwendung ausgeliefert werden.
-- Ein Neustart darf die Funkkommunikation nicht dauerhaft blockieren. Initiale Sequenznummern und Überlaufverhalten MÜSSEN eindeutig definiert werden.
-- Broadcast-Frames werden nicht bestätigt, damit keine ACK-Kollisionen zwischen mehreren Empfängern entstehen.
+- Each device MUST store recently received sequence numbers per sender for a limited time window.
+- A repeated `Data` frame MUST be acknowledged again, but must not be delivered to the application again.
+- A restart must not permanently block radio communication. Initial sequence numbers and overflow behavior MUST be clearly defined.
+- Broadcast frames are not acknowledged, to prevent ACK collisions between multiple recipients.
 
-### 12.5 Optionale Authentifizierung und Verschlüsselung
+### 12.5 Optional authentication and encryption
 
-Raw LoRa stellt selbst keine Vertraulichkeit, Absenderauthentifizierung oder Replay-Sicherheit bereit. Für geschützte Kommunikation MUSS optional AES-GCM mit einem vorher auf beiden Geräten provisionierten Schlüssel eingesetzt werden:
+Raw LoRa itself provides no confidentiality, sender authentication, or replay
+protection. For protected communication, AES-GCM MUST optionally be used with a
+key provisioned on both devices in advance:
 
-- Jede verschlüsselte Nachricht MUSS einen unter dem Schlüssel eindeutigen Nonce verwenden.
-- Protokollkopf und Adressen MÜSSEN als Additional Authenticated Data geschützt werden.
-- Frames mit ungültigem Authentication Tag MÜSSEN ohne ACK verworfen werden.
-- Schlüssel DÜRFEN nicht in `appsettings.json`, Logs oder dem Repository gespeichert werden.
-- Schlüssel und persistenter Nonce-Zustand MÜSSEN über restriktiv lesbare externe Dateien oder einen Secret Store geladen werden.
+- Each encrypted message MUST use a nonce unique under the key.
+- Protocol header and addresses MUST be protected as additional authenticated data.
+- Frames with an invalid authentication tag MUST be discarded without an ACK.
+- Keys MUST NOT be stored in `appsettings.json`, logs, or the repository.
+- Keys and persistent nonce state MUST be loaded from externally restricted files or a secret store.
 
-Unverschlüsselter Betrieb bleibt für lokale Funk- und Reichweitentests möglich und MUSS in der Konsole deutlich als nicht authentifiziert gekennzeichnet werden.
+Unencrypted operation remains available for local radio and range tests and MUST
+be clearly marked as unauthenticated in the console.
 
-### 12.6 Konsolenfunktionen
+### 12.6 Console functions
 
-Die Konsole enthält folgende Befehle:
+The console contains the following commands:
 
-| Befehl | Verhalten |
+| Command | Behavior |
 | --- | --- |
-| `peer id <id>` | Eigene Geräte-ID konfigurieren |
-| `peer add <id>` | Bekannte Gegenstelle registrieren |
-| `listen` | Fortlaufend Frames empfangen und adressierte Nachrichten bestätigen |
-| `send-to <id> text <value>` | Text mit ACK und Retry senden |
-| `send-to <id> hex <bytes>` | Binärdaten mit ACK und Retry senden |
-| `broadcast text <value>` | Nachricht ohne ACK an alle Empfänger senden |
-| `peers` | Bekannte Geräte und letzte Empfangswerte anzeigen |
-| `stats` | TX, RX, ACKs, Retries, Timeouts, Duplikate und CRC-Fehler anzeigen |
-| `export-chat <session.jsonl> [output.html]` | Persistierte Sitzung als eigenständige HTML-Chatansicht exportieren |
+| `peer id <id>` | Configure own device ID |
+| `peer add <id>` | Register a known peer |
+| `listen` | Continuously receive frames and acknowledge addressed messages |
+| `send-to <id> text <value>` | Send text with ACK and retry |
+| `send-to <id> hex <bytes>` | Send binary data with ACK and retry |
+| `broadcast text <value>` | Send a message to all recipients without an ACK |
+| `peers` | Show known devices and latest reception values |
+| `stats` | Show TX, RX, ACKs, retries, timeouts, duplicates, and CRC errors |
+| `export-chat <session.jsonl> [output.html]` | Export the persisted session as a standalone HTML chat view |
 
-Im Normalbetrieb MÜSSEN empfangene Broadcast-Texte ohne Funkstatus auf dem
-128×32-OLED erscheinen. Die Anzeige verwendet vier Zeilen mit jeweils bis zu
-21 Zeichen. Längere Texte scrollen einmal zeilenweise nach oben und lassen
-anschließend die letzte Seite stehen. Eine neu empfangene Broadcast-Nachricht
-ersetzt eine noch laufende Anzeige. Direkt adressierte Nachrichten werden
-nicht auf dem OLED dargestellt.
+In normal operation, received broadcast text MUST appear without radio status on
+the 128x32 OLED. The display uses four lines of up to 21 characters each.
+Longer text scrolls upward one line at a time and then leaves the last page
+displayed. A newly received broadcast message replaces a display that is still
+running. Directly addressed messages are not shown on the OLED.
 
-Gesendete und empfangene Nutzdaten MÜSSEN pro Kombination aus lokaler
-Geräte-ID und Gegenstelle in einer JSONL-Datei persistiert werden. Die Datei
-wird bei der ersten Nachricht geöffnet, bis zum Prozessende weitergeführt und
-standardmäßig unter `~/LoRaP2P/sessions` abgelegt. Jede Zeile enthält genau
-eine Nachricht mit Zeitstempel, Richtung, IDs, Sequenznummer, Text- und
-Hexdarstellung sowie Empfangs- oder Zustellstatus. Broadcasts werden in einer
-eigenen Broadcast-Sitzung gespeichert. Der HTML-Export MUSS ohne externe
-Ressourcen auskommen und Nachrichteninhalte vor der Ausgabe HTML-kodieren.
+Sent and received payloads MUST be persisted in a JSONL file for each
+local-device-ID and peer combination. The file is opened for the first message,
+kept open until process exit, and stored by default under
+`~/LoRaP2P/sessions`. Each line contains exactly one message with timestamp,
+direction, IDs, sequence number, text and hexadecimal representation, and
+reception or delivery status. Broadcasts are stored in a separate broadcast
+session. The HTML export MUST use no external resources and HTML-encode message
+content before output.
 
-### 12.7 Akzeptanzkriterien
+### 12.7 Acceptance criteria
 
-- Zwei Raspberry Pis tauschen abwechselnd Text- und Binärnachrichten aus.
-- Direkt adressierte Nachrichten werden nur vom vorgesehenen Gerät ausgeliefert.
-- ACKs werden anhand von Absender und Sequenznummer eindeutig zugeordnet.
-- Bei absichtlich verworfenem ersten ACK wird dieselbe Nachricht erneut gesendet, aber nur einmal an die Empfängeranwendung ausgeliefert.
-- Nach ausgeschöpfter Retry-Grenze meldet der Sender einen nachvollziehbaren Zustellfehler.
-- Gleichzeitige Sendeversuche werden durch zufälligen Backoff aufgelöst.
-- Duty-Cycle-Grenzen gelten für Datenframes, ACKs und Retries.
-- Gesendete, empfangene und fehlgeschlagene Nachrichten werden im
-  dokumentierten JSONL-Format persistiert und lassen sich als HTML exportieren.
-- Bei aktivierter Verschlüsselung werden manipulierte Frames und wiederverwendete Nonces abgelehnt.
-- Alle Frame-, ACK-, Retry-, Duplikat- und Kryptografiefälle sind mit NUnit ohne Funkhardware getestet.
+- Two Raspberry Pis exchange text and binary messages in turn.
+- Directly addressed messages are delivered only by the intended device.
+- ACKs are uniquely associated using sender and sequence number.
+- When the first ACK is intentionally discarded, the same message is sent again but delivered to the recipient application only once.
+- After the retry limit is exhausted, the sender reports an understandable delivery error.
+- Simultaneous transmission attempts are resolved through random backoff.
+- Duty-cycle limits apply to data frames, ACKs, and retries.
+- Sent, received, and failed messages are persisted in the documented JSONL format and can be exported as HTML.
+- When encryption is enabled, modified frames and reused nonces are rejected.
+- All frame, ACK, retry, duplicate, and cryptographic cases are tested with NUnit without radio hardware.
 
-Diese P2P-Ausbaustufe ist ein eigenes Release und nicht Bestandteil der Akzeptanz von Version 1. Sie ersetzt keinen standardisierten LoRaWAN-Stack und ist nicht mit LoRaWAN-Gateways kompatibel.
+This P2P expansion is a separate release and is not part of version 1 acceptance.
+It does not replace a standardized LoRaWAN stack and is not compatible with
+LoRaWAN gateways.

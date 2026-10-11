@@ -126,9 +126,9 @@ internal static class P2pChatExporter
 
             var sender = message.Direction == "incoming"
                 ? $"Peer {message.PeerNodeId}"
-                : message.Direction == "broadcast" ? "Ich an alle" : "Ich";
+                : message.Direction == "broadcast" ? "Me to everyone" : "Me";
             
-            var content = message.Text ?? "(Binärnachricht)";
+            var content = message.Text ?? "(Binary message)";
             StringBuilder metadata = new();
             metadata.Append("Seq ").Append(message.SequenceNumber.ToString(CultureInfo.InvariantCulture))
                 .Append(" · ").Append(message.Status)
@@ -136,7 +136,7 @@ internal static class P2pChatExporter
 
             if (message.Attempts is not null)
             {
-                metadata.Append(" · ").Append(message.Attempts.Value.ToString(CultureInfo.InvariantCulture)).Append(" Versuch(e)");
+                metadata.Append(" · ").Append(message.Attempts.Value.ToString(CultureInfo.InvariantCulture)).Append(" attempt(s)");
             }
 
             if (message.RssiDbm is not null)

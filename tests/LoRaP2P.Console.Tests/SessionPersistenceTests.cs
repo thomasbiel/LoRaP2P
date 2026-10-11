@@ -91,6 +91,9 @@ internal sealed class SessionPersistenceTests
             Assert.That(html, Does.Contain("&lt;script&gt;alert(1)&lt;/script&gt;"));
             Assert.That(html, Does.Not.Contain("<script>alert(1)</script>"));
             Assert.That(html, Does.Contain("class=\"row outgoing failed\""));
+            Assert.That(html, Does.Contain("lang=\"en\""));
+            Assert.That(html, Does.Contain(">Me<"));
+            Assert.That(html, Does.Contain("4 attempt(s)"));
             Assert.That(html, Does.Contain("<style>"));
             Assert.That(html, Does.Not.Contain("{{"));
         });

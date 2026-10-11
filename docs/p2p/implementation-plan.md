@@ -1,131 +1,131 @@
-# Umsetzungsplan für die P2P-Ausbaustufe
+# Implementation Plan for the P2P Extension
 
-## Übersicht
+## Overview
 
-Die Phasen bauen aufeinander auf. Eine Phase gilt erst als abgeschlossen,
-wenn ihre Tests und Dokumentationsänderungen enthalten sind.
+The phases build on one another. A phase is considered complete only when its
+tests and documentation changes are included.
 
-| Phase | Ergebnis | Status |
+| Phase | Outcome | Status |
 | ---: | --- | --- |
-| 0 | Bidirektionaler Raw-LoRa-Basistest | Offen |
-| 1 | Projektgerüst und Protokollmodelle | Implementiert |
-| 2 | Frame-Codec | Implementiert |
-| 3 | Konfiguration, Peers und Statistiken | Implementiert |
-| 4 | Empfang, ACK und Duplikate | Implementiert |
-| 5 | Zuverlässiges Senden und Broadcast | Implementiert |
-| 6 | Konsolenbefehle aus PRD 12.6 | Implementiert |
-| 7 | JSONL-Sitzungspersistenz und HTML-Export | Implementiert |
-| 8 | Systemtest, Dokumentation und Release | Software validiert, Hardware offen |
-| 9 | Optionale AES-GCM-Erweiterung | Geplant |
+| 0 | Bidirectional Raw LoRa baseline test | Open |
+| 1 | Project scaffold and protocol models | Implemented |
+| 2 | Frame codec | Implemented |
+| 3 | Configuration, peers, and statistics | Implemented |
+| 4 | Reception, ACK, and duplicates | Implemented |
+| 5 | Reliable transmission and broadcast | Implemented |
+| 6 | Console commands from PRD 12.6 | Implemented |
+| 7 | JSONL session persistence and HTML export | Implemented |
+| 8 | System test, documentation, and release | Software validated, hardware open |
+| 9 | Optional AES-GCM extension | Planned |
 
-## Phase 0: Hardwarebasis bestätigen
+## Phase 0: Confirm Hardware Baseline
 
-Aufgaben:
+Tasks:
 
-- zwei Geräte auf identisches Funkprofil konfigurieren,
-- Text und Binärdaten in beide Richtungen übertragen,
-- RSSI und SNR plausibilisieren,
-- Timeout bei falscher Frequenz prüfen,
-- Timeout bei falschem Syncword prüfen,
-- Abbruch und Timeout mit anschließendem Standby bestätigen.
+- configure two devices with identical radio profiles,
+- transmit text and binary data in both directions,
+- validate RSSI and SNR plausibility,
+- verify timeout with an incorrect frequency,
+- verify timeout with an incorrect syncword,
+- confirm cancellation and timeout followed by standby.
 
-Abschlusskriterium:
+Completion criterion:
 
-- Alle hardwarebezogenen Akzeptanzkriterien aus PRD 10 sind protokolliert.
+- All hardware-related acceptance criteria from PRD 10 are recorded.
 
-## Phase 1: Projekt und öffentliche Modelle
+## Phase 1: Project and Public Models
 
-Aufgaben:
+Tasks:
 
-- `LoRaP2P.Protocol` und `LoRaP2P.Protocol.Tests` anlegen,
-- beide Projekte in `LoRaP2P.slnx` aufnehmen,
-- `P2pNodeId` mit Wertebereich 1–65534 definieren,
-- Nachrichtentypen und unveränderliches `P2pFrame` definieren,
-- Optionen für ACK, Retry, Backoff und Duplikatfenster modellieren,
-- Nullable und Warnings-as-Errors beibehalten.
+- create `LoRaP2P.Protocol` and `LoRaP2P.Protocol.Tests`,
+- add both projects to `LoRaP2P.slnx`,
+- define `P2pNodeId` with range 1–65534,
+- define message types and immutable `P2pFrame`,
+- model options for ACK, retry, backoff, and duplicate window,
+- retain nullable and warnings-as-errors.
 
-Abschlusskriterium:
+Completion criterion:
 
-- Lösung baut; Modelle lehnen ungültige IDs und Optionen ab.
+- Solution builds; models reject invalid IDs and options.
 
-## Phase 2: Frame-Codec
+## Phase 2: Frame Codec
 
-Aufgaben:
+Tasks:
 
-- Encoding gemäß [Protokollspezifikation](protocol-v1.md) implementieren,
-- Decoding ohne teilweise Ergebnisse implementieren,
-- Big-Endian-Konvertierung zentralisieren,
-- maximale Payloadgrößen erzwingen,
-- typabhängige Payloadregeln validieren,
-- unbekannte Versionen, Flags und Typen ablehnen.
+- implement encoding according to the [protocol specification](protocol-v1.md),
+- implement decoding without partial results,
+- centralize Big Endian conversion,
+- enforce maximum payload sizes,
+- validate type-specific payload rules,
+- reject unknown versions, flags, and types.
 
-Abschlusskriterium:
+Completion criterion:
 
-- Alle gültigen Framearten bestehen Roundtrip-Tests.
-- Jede Validierungsregel besitzt mindestens einen Negativtest.
+- All valid frame types pass round-trip tests.
+- Each validation rule has at least one negative test.
 
-## Phase 3: Konfiguration, Peers und Statistiken
+## Phase 3: Configuration, Peers, and Statistics
 
-Aufgaben:
+Tasks:
 
-- `P2pConfiguration` und Validierung implementieren,
-- separate JSON-Datei und `--peer-config` ergänzen,
-- atomaren Configuration Store implementieren,
-- lokale ID und Peer-IDs persistent verwalten,
-- sitzungsbezogene Peer-Metadaten modellieren,
-- thread-sichere Statistikzähler implementieren,
-- Sequenznummerngenerator mit zufälligem Startwert implementieren,
-- begrenzten Duplikatcache pro Peer implementieren.
+- implement `P2pConfiguration` and validation,
+- add separate JSON file and `--peer-config`,
+- implement atomic configuration store,
+- persistently manage local ID and peer IDs,
+- model session-specific peer metadata,
+- implement thread-safe statistics counters,
+- implement sequence number generator with random initial value,
+- implement bounded duplicate cache per peer.
 
-Abschlusskriterium:
+Completion criterion:
 
-- Konfigurationsänderungen überstehen einen Reload.
-- Fehlerhafte Dateien erzeugen verständliche Fehler statt Defaults.
-- Statistiken und Duplikatcache sind deterministisch getestet.
+- Configuration changes survive a reload.
+- Invalid files produce understandable errors instead of defaults.
+- Statistics and duplicate cache are tested deterministically.
 
-## Phase 4: Empfang, ACK und Duplikate
+## Phase 4: Reception, ACK, and Duplicates
 
-Aufgaben:
+Tasks:
 
-- `P2pNode.ListenAsync` implementieren,
-- CRC-Fehler vor dem Frame-Decoder verwerfen,
-- lokale und Broadcast-Adressierung behandeln,
-- neue Daten ausliefern,
-- Duplikate erneut bestätigen, aber nicht erneut ausliefern,
-- ACK nach 100 ms senden,
-- fremde und ungültige Frames ohne ACK verwerfen,
-- Peer-Metadaten und Statistiken aktualisieren,
-- Cancellation bis zum Radio-Standby durchreichen.
+- implement `P2pNode.ListenAsync`,
+- discard CRC errors before the frame decoder,
+- handle local and broadcast addressing,
+- deliver new data,
+- acknowledge duplicates again, but do not deliver them again,
+- send ACK after 100 ms,
+- discard foreign and invalid frames without ACK,
+- update peer metadata and statistics,
+- propagate cancellation through to radio standby.
 
-Abschlusskriterium:
+Completion criterion:
 
-- Empfangs-, ACK- und Duplikatfälle bestehen ohne Hardware.
+- Reception, ACK, and duplicate cases pass without hardware.
 
-## Phase 5: Zuverlässiges Senden und Broadcast
+## Phase 5: Reliable Transmission and Broadcast
 
-Aufgaben:
+Tasks:
 
-- adressiertes `SendAsync` implementieren,
-- ACK anhand Peer-ID und Sequenznummer zuordnen,
-- festen Gesamt-ACK-Timeout von 2 Sekunden pro Versuch einhalten,
-- bis zu drei Retries implementieren,
-- Backoff von 250 bis 1000 ms injizierbar zufällig wählen,
-- während der ACK-Wartezeit andere gültige Frames verarbeiten,
-- Zustellfehler nach ausgeschöpften Versuchen melden,
-- Broadcast ohne ACK und Retry implementieren,
-- Duty-Cycle-Verhalten des vorhandenen Radios unverändert nutzen.
+- implement addressed `SendAsync`,
+- match ACK using peer ID and sequence number,
+- enforce a fixed total ACK timeout of 2 seconds per attempt,
+- implement up to three retries,
+- choose backoff from 250 to 1000 ms using injectable randomness,
+- process other valid frames during the ACK wait,
+- report delivery failure after exhausting attempts,
+- implement broadcast without ACK or retry,
+- use the existing radio's duty-cycle behavior unchanged.
 
-Abschlusskriterium:
+Completion criterion:
 
-- verlorenes erstes ACK führt zu genau einem Retry und einer Zustellung.
-- vier erfolglose Versuche führen zu einem expliziten Zustellfehler.
+- lost first ACK leads to exactly one retry and one delivery.
+- four unsuccessful attempts lead to an explicit delivery failure.
 
-## Phase 6: Konsolenbefehle
+## Phase 6: Console Commands
 
-Aufgaben:
+Tasks:
 
-- `CommandContext` um P2P-Dienste erweitern,
-- neue Verben implementieren und registrieren:
+- extend `CommandContext` with P2P services,
+- implement and register new verbs:
   - `peer id <id>`,
   - `peer add <id>`,
   - `listen`,
@@ -134,66 +134,66 @@ Aufgaben:
   - `broadcast text <value>`,
   - `peers`,
   - `stats`,
-- CommandLineParser-Hilfe aus Attributen erzeugen,
-- Fehlertexte zwischen Parsing, Zustellung und Funkfehler unterscheiden,
-- unverschlüsselten Betrieb beim Start von `listen`, `send-to` und
-  `broadcast` sichtbar kennzeichnen,
-- README um vollständige Beispiele ergänzen.
+- generate CommandLineParser help from attributes,
+- distinguish parsing, delivery, and radio errors in error messages,
+- visibly identify unencrypted operation when starting `listen`, `send-to`,
+  and `broadcast`,
+- add complete examples to the README.
 
-Abschlusskriterium:
+Completion criterion:
 
-- Jeder neue Befehl besitzt mindestens einen Erfolgs- und einen Fehlerfall.
-- Bestehende Version-1-Befehle verhalten sich unverändert.
+- Each new command has at least one success and one failure case.
+- Existing version 1 commands behave unchanged.
 
-## Phase 7: JSONL-Sitzungspersistenz und HTML-Export
+## Phase 7: JSONL Session Persistence and HTML Export
 
-Aufgaben:
+Tasks:
 
-- je lokaler ID und Gegenstelle beim ersten Versand oder Empfang eine
-  append-only JSONL-Datei öffnen,
-- eingehende, bestätigte, fehlgeschlagene und Broadcast-Nachrichten erfassen,
-- alle Writer beim Prozessende schließen,
-- Standardpfad `~/LoRaP2P/sessions` verwenden,
-- `export-chat <session.jsonl> [output.html]` implementieren,
-- selbstständiges HTML mit kodierten Nutzdaten atomar schreiben,
-- Persistenz, Export, ungültige Eingaben und HTML-Kodierung testen.
+- open an append-only JSONL file per local ID and peer on the first
+  transmission or reception,
+- record incoming, acknowledged, failed, and broadcast messages,
+- close all writers when the process ends,
+- use default path `~/LoRaP2P/sessions`,
+- implement `export-chat <session.jsonl> [output.html]`,
+- atomically write standalone HTML with encoded payloads,
+- test persistence, export, invalid input, and HTML encoding.
 
-Abschlusskriterium:
+Completion criterion:
 
-- JSONL-Dateien können während der laufenden Sitzung exportiert werden.
-- Eine Nachricht entspricht genau einem validierten JSON-Objekt pro Zeile.
+- JSONL files can be exported during the active session.
+- One message corresponds to exactly one validated JSON object per line.
 
-## Phase 8: Systemtest und Release
+## Phase 8: System Test and Release
 
-Aufgaben:
+Tasks:
 
-- vollständigen Release-Build und alle Tests ausführen,
-- self-contained `linux-arm64` veröffentlichen,
-- Zwei-Geräte-Testmatrix ausführen,
-- absichtlich erstes ACK verwerfen,
-- gleichzeitige Sendeversuche auslösen,
-- Duty-Cycle-Wartezeiten dokumentieren,
-- PRD-Status und Architekturdiagramm aktualisieren,
-- bekannte Einschränkungen dokumentieren.
+- run the complete Release build and all tests,
+- publish self-contained `linux-arm64`,
+- run the two-device test matrix,
+- intentionally discard the first ACK,
+- initiate simultaneous transmission attempts,
+- document duty-cycle wait times,
+- update PRD status and architecture diagram,
+- document known limitations.
 
-Abschlusskriterium:
+Completion criterion:
 
-- Sämtliche Kriterien aus PRD 12.7 sind erfüllt oder explizit als
-  hardwarebedingt offen dokumentiert.
+- All criteria from PRD 12.7 are fulfilled or explicitly documented as open
+  due to hardware.
 
-## Phase 9: AES-GCM als Folge-Release
+## Phase 9: AES-GCM as a Follow-up Release
 
-Diese Phase beginnt erst nach Abnahme des unverschlüsselten P2P-Protokolls.
-Details stehen in [security.md](security.md).
+This phase begins only after acceptance of the unencrypted P2P protocol.
+Details are in [security.md](security.md).
 
 ## Definition of Done
 
-Ein Arbeitspaket ist fertig, wenn:
+A work package is complete when:
 
-- Produktionscode und relevante Tests enthalten sind,
-- Build und Tests ohne Warnungen erfolgreich sind,
-- keine echte Hardware für Unit-Tests benötigt wird,
-- Fehler explizit gemeldet werden,
-- README, PRD und P2P-Dokumente konsistent sind,
-- bei Plattformänderungen das `linux-arm64`-Publish erfolgreich ist,
-- Hardwaretests mit Datum, Geräten und Funkprofil protokolliert sind.
+- production code and relevant tests are included,
+- build and tests succeed without warnings,
+- unit tests require no real hardware,
+- errors are reported explicitly,
+- README, PRD, and P2P documents are consistent,
+- the `linux-arm64` publish succeeds for platform changes,
+- hardware tests are recorded with date, devices, and radio profile.

@@ -1,22 +1,22 @@
-# Zielarchitektur der P2P-Ausbaustufe
+# Target Architecture of the P2P Extension
 
-## 1. Schichten
+## 1. Layers
 
-Die P2P-Logik wird als eigenes Projekt `LoRaP2P.Protocol` zwischen Konsole und
-`ILoraRadio` eingeführt. Dadurch bleiben Frameformat, ACKs, Retries und
-Duplikaterkennung unabhängig von CommandLineParser und der RFM95-Hardware.
+P2P logic is introduced as a separate `LoRaP2P.Protocol` project between the
+console and `ILoraRadio`. This keeps the frame format, ACKs, retries, and
+duplicate detection independent of CommandLineParser and RFM95 hardware.
 
 ```mermaid
 flowchart TD
     CLI[LoRaP2P.Console]
-    VERBS[P2P-Konsolenverben]
+    VERBS[P2P console verbs]
     CONFIG[P2pConfigurationStore]
     SESSION[P2pConsoleSession]
     LOG[P2pSessionLog]
     EXPORT[P2pChatExporter]
-    DISPLAY[Radio-Bonnet OLED]
-    JSONL[JSONL-Sitzungsdateien]
-    HTML[Eigenständige HTML-Chatansicht]
+    DISPLAY[Radio Bonnet OLED]
+    JSONL[JSONL session files]
+    HTML[Standalone HTML chat view]
     NODE[P2pNode]
     CODEC[P2pFrameCodec]
     PEERS[PeerRegistry]
@@ -35,7 +35,7 @@ flowchart TD
 
     SESSION --> NODE
     SESSION --> LOG
-    SESSION -->|empfangene Broadcasts| DISPLAY
+    SESSION -->|received broadcasts| DISPLAY
     LOG --> JSONL
     EXPORT --> JSONL
     EXPORT --> HTML
@@ -50,9 +50,9 @@ flowchart TD
     TRANSPORT --> HARDWARE
 ```
 
-## 2. Projektstruktur
+## 2. Project Structure
 
-Implementiert:
+Implemented:
 
 ```text
 src/
@@ -74,89 +74,88 @@ tests/
   LoRaP2P.Radio.Rfm9x.Tests/
 ```
 
-Abhängigkeiten:
+Dependencies:
 
-- `LoRaP2P.Protocol` referenziert `LoRaP2P.Radio.Rfm9x`, um `ILoraRadio` und
-  die Empfangsmodelle zu verwenden.
-- `LoRaP2P.Console` referenziert `LoRaP2P.Protocol`.
-- `LoRaP2P.Radio.Rfm9x` kennt weder P2P-Kommandos noch Peer-Zustand.
-- Der Frame-Codec besitzt keine Hardware- oder Dateisystemabhängigkeit.
+- `LoRaP2P.Protocol` references `LoRaP2P.Radio.Rfm9x` to use `ILoraRadio` and
+  the reception models.
+- `LoRaP2P.Console` references `LoRaP2P.Protocol`.
+- `LoRaP2P.Radio.Rfm9x` knows neither P2P commands nor peer state.
+- The frame codec has no hardware or filesystem dependency.
 
-## 3. Kernkomponenten
+## 3. Core Components
 
-### P2pFrame und P2pFrameCodec
+### P2pFrame and P2pFrameCodec
 
-- typisiertes unveränderliches Frame-Modell,
-- deterministisches Encoding,
-- vollständige Validierung beim Decoding,
-- keine stillen Standardwerte für ungültige Eingaben.
+- typed immutable frame model,
+- deterministic encoding,
+- complete validation during decoding,
+- no silent defaults for invalid input.
 
 ### P2pNode
 
-Orchestriert die halbduplexe Kommunikation:
+Orchestrates half-duplex communication:
 
-- Sequenznummern vergeben,
-- Daten und Broadcasts senden,
-- auf ACKs warten,
-- Retry und Backoff ausführen,
-- fortlaufend empfangen,
-- adressierte Frames zustellen,
-- ACKs erzeugen,
-- Duplikate unterdrücken,
-- Statistik aktualisieren.
+- assign sequence numbers,
+- send data and broadcasts,
+- wait for ACKs,
+- perform retries and backoff,
+- receive continuously,
+- deliver addressed frames,
+- generate ACKs,
+- suppress duplicates,
+- update statistics.
 
-Eine Semaphore schützt vollständige P2P-Transaktionen. Die Sperre umfasst bei
-adressiertem Versand sowohl TX als auch die anschließende ACK-Wartephase.
+A semaphore protects complete P2P transactions. For addressed transmission,
+the lock covers both TX and the subsequent ACK wait phase.
 
 ### PeerRegistry
 
-Trennt persistente und flüchtige Daten:
+Separates persistent and transient data:
 
-- persistent: lokale ID und bekannte Peer-IDs,
-- sitzungsbezogen: letzter Empfang, RSSI, SNR und letzte Sequenznummern.
+- persistent: local ID and known peer IDs,
+- session-specific: last reception, RSSI, SNR, and last sequence numbers.
 
 ### P2pStatistics
 
-Thread-sichere sitzungsbezogene Zähler:
+Thread-safe session counters:
 
-- gesendete und empfangene Datenframes,
-- gesendete und empfangene ACKs,
-- Retries,
-- ACK-Timeouts,
-- Duplikate,
-- CRC-Fehler,
-- verworfene ungültige oder fremd adressierte Frames,
-- Zustellfehler.
+- sent and received data frames,
+- sent and received ACKs,
+- retries,
+- ACK timeouts,
+- duplicates,
+- CRC errors,
+- discarded invalid or foreign-addressed frames,
+- delivery failures.
 
 ### P2pConfigurationStore
 
-- lädt und validiert die separate JSON-Datei,
-- schreibt Änderungen atomar über temporäre Datei und Ersetzung,
-- meldet I/O- und Validierungsfehler explizit,
-- speichert keine Schlüssel.
+- loads and validates the separate JSON file,
+- writes changes atomically through a temporary file and replacement,
+- reports I/O and validation errors explicitly,
+- stores no keys.
 
-### P2pSessionLog und P2pChatExporter
+### P2pSessionLog and P2pChatExporter
 
-`P2pConsoleSession` protokolliert gesendete und empfangene Nutzdaten
-prozessweit. `P2pSessionLog` hält je Kombination aus lokaler ID und Peer einen
-append-only JSONL-Writer offen und schließt alle Writer beim Prozessende.
-Broadcasts verwenden eine eigene Pseudo-Gegenstelle.
+`P2pConsoleSession` logs sent and received payloads process-wide.
+`P2pSessionLog` keeps an append-only JSONL writer open for each combination of
+local ID and peer and closes all writers when the process ends. Broadcasts use
+a separate pseudo-peer.
 
-`P2pChatExporter` liest auch eine noch geöffnete Sitzungsdatei, validiert
-jedes JSON-Objekt und erzeugt atomar eine eigenständige HTML-Datei. Dynamische
-Inhalte werden HTML-kodiert; externe Skripte, Schriften oder Stylesheets
-werden nicht geladen.
+`P2pChatExporter` also reads a session file that is still open, validates each
+JSON object, and atomically creates a standalone HTML file. Dynamic content is
+HTML-encoded; external scripts, fonts, or stylesheets are not loaded.
 
-### Radio-Bonnet-Display
+### Radio Bonnet Display
 
-Im Normalbetrieb leitet `P2pConsoleSession` ausschließlich neu empfangene
-Broadcast-Nutzdaten an das OLED weiter. Die Darstellung ist vom Funkempfang
-entkoppelt, damit eine laufende Anzeige keine weiteren Frames blockiert.
-`RadioBonnetTextLayout` bricht Text auf 21 Zeichen pro Zeile um. Bei mehr als
-vier Zeilen verschiebt ein Hintergrundtask die Anzeige einmal zeilenweise bis
-zur letzten Seite. Eine neue Nachricht bricht den vorherigen Durchlauf ab.
+In normal operation, `P2pConsoleSession` forwards only newly received
+broadcast payloads to the OLED. Display rendering is decoupled from radio
+reception so that an active display does not block other frames.
+`RadioBonnetTextLayout` wraps text at 21 characters per line. With more than
+four lines, a background task advances the display one line at a time to the
+last page. A new message cancels the previous run.
 
-## 4. Sendeablauf
+## 4. Transmission Flow
 
 ```mermaid
 sequenceDiagram
@@ -166,54 +165,54 @@ sequenceDiagram
     participant Peer
 
     CLI->>Node: SendAsync(peer, payload)
-    Node->>Node: Frame und Sequenznummer erzeugen
+    Node->>Node: Create frame and sequence number
 
-    loop erster Versuch plus maximal 3 Retries
+    loop first attempt plus maximum 3 retries
         Node->>Radio: TransmitAsync(Data)
         Radio-->>Node: TxDone
-        Node->>Radio: ReceiveSingleAsync(ACK-Timeout)
+      Node->>Radio: ReceiveSingleAsync(ACK timeout)
         Peer-->>Radio: Ack
-        Radio-->>Node: empfangener Frame
-        alt passendes ACK
-            Node-->>CLI: zugestellt
-        else Timeout
-            Node->>Node: zufälliger Backoff
+      Radio-->>Node: received frame
+      alt matching ACK
+        Node-->>CLI: delivered
+      else Timeout
+        Node->>Node: random backoff
         end
     end
 
-    Node-->>CLI: Zustellfehler
+    Node-->>CLI: delivery failure
 ```
 
-`TxDone` bleibt vom Peer-ACK getrennt. Nur ein korrekt zugeordnetes ACK meldet
-eine P2P-Zustellung.
+`TxDone` remains separate from the peer ACK. Only a correctly matched ACK
+reports P2P delivery.
 
-## 5. Listen-Ablauf
+## 5. Listen Flow
 
-`listen` ruft wiederholt `ReceiveSingleAsync` mit einem kurzen internen
-Timeout auf, damit Cancellation regelmäßig beobachtet wird.
+`listen` repeatedly calls `ReceiveSingleAsync` with a short internal timeout so
+that cancellation is observed regularly.
 
-Für jeden empfangenen Frame:
+For each received frame:
 
-1. RFM95-CRC prüfen.
-2. Frame vollständig decodieren.
-3. Adressierung prüfen.
-4. Statistik und Peer-Metadaten aktualisieren.
-5. Duplikat erkennen.
-6. Neue Daten an die Konsole ausliefern.
-7. Direkt adressierte Daten nach 100 ms bestätigen.
+1. Check the RFM95 CRC.
+2. Decode the complete frame.
+3. Check addressing.
+4. Update statistics and peer metadata.
+5. Detect duplicates.
+6. Deliver new data to the console.
+7. Acknowledge directly addressed data after 100 ms.
 
-Strg+C beendet den Prozess. Der bestehende Cancellation-Pfad stellt den
-Standby-Modus des Radios wieder her.
+Ctrl+C terminates the process. The existing cancellation path restores the
+radio standby mode.
 
-## 6. Testarchitektur
+## 6. Test Architecture
 
-Zusätzlich zum vorhandenen `FakeLoraRadio` wird für Protokolltests ein
-skriptbarer Fake benötigt:
+In addition to the existing `FakeLoraRadio`, protocol tests require a
+scriptable fake:
 
-- Warteschlange eingehender Pakete,
-- Aufzeichnung aller gesendeten Frames,
-- steuerbare Timeouts und CRC-Fehler,
-- deterministische Uhr über `TimeProvider`,
-- deterministische Backoff-Werte über eine injizierte Zufallsquelle.
+- queue of incoming packets,
+- recording of all transmitted frames,
+- controllable timeouts and CRC errors,
+- deterministic clock through `TimeProvider`,
+- deterministic backoff values through an injected random source.
 
-Damit werden Retries und Timeouts ohne echte Wartezeit getestet.
+This allows retries and timeouts to be tested without real waiting.

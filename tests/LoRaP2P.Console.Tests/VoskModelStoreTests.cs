@@ -36,17 +36,22 @@ internal sealed class VoskModelStoreTests
     {
         using var handler = new ArchiveHandler(CreateModelArchive(nested));
         using var client = new HttpClient(handler);
+        using var output = new StringWriter();
         var store = new VoskModelStore(client, this.directory);
         var model = await store.GetModelAsync("", VoskModelStore.DefaultModelUrl,
-            TextWriter.Null, CancellationToken.None);
+            output, CancellationToken.None);
         var cached = await store.GetModelAsync("", VoskModelStore.DefaultModelUrl,
-            TextWriter.Null, CancellationToken.None);
+            output, CancellationToken.None);
 
         Assert.Multiple(() =>
         {
             Assert.That(VoskModelStore.IsModelDirectory(model), Is.True);
             Assert.That(cached, Is.EqualTo(model));
             Assert.That(handler.RequestCount, Is.EqualTo(1));
+            Assert.That(output.ToString(), Does.Contain("Downloading speech model:"));
+            Assert.That(output.ToString(), Does.Contain("Extracting speech model..."));
+            Assert.That(output.ToString(), Does.Contain("Speech model ready:"));
+            Assert.That(output.ToString(), Does.Contain("Using cached speech model:"));
             Assert.That(Directory.GetDirectories(this.directory, ".download-*"), Is.Empty);
             Assert.That(Directory.GetFiles(this.directory, "*.zip", SearchOption.AllDirectories), Is.Empty);
         });

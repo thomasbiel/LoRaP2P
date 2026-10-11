@@ -1,160 +1,153 @@
-# P2P-Protokoll Version 1
+# P2P Protocol Version 1
 
-## 1. Grundsätze
+## 1. Principles
 
-Das Protokoll liegt unmittelbar in der RFM95-Payload. Der SX1276 übernimmt
-LoRa-Modulation und Payload-CRC; das P2P-Protokoll ergänzt Adressierung,
-Sequenznummern und Nachrichtentypen.
+The protocol is carried directly in the RFM95 payload. The SX1276 handles
+LoRa modulation and payload CRC; the P2P protocol adds addressing, sequence
+numbers, and message types.
 
-- Maximale RFM95-Payload: 255 Byte
-- Feste Headerlänge: 12 Byte
-- Maximale unverschlüsselte Anwendungs-Payload: 243 Byte
-- Mehrbyte-Felder: Big Endian
-- Halbduplexbetrieb: Senden und Empfangen erfolgen nie gleichzeitig
+- Maximum RFM95 payload: 255 bytes
+- Fixed header length: 12 bytes
+- Maximum unencrypted application payload: 243 bytes
+- Multi-byte fields: Big Endian
+- Half-duplex operation: transmission and reception never occur simultaneously
 
-## 2. Binäres Frameformat
+## 2. Binary Frame Format
 
-| Offset | Größe | Feld | Kodierung |
+| Offset | Size | Field | Encoding |
 | ---: | ---: | --- | --- |
-| 0 | 1 | Protokollversion | Für diese Spezifikation `0x01` |
-| 1 | 1 | Nachrichtentyp | `Data=0x01`, `Ack=0x02`, `Error=0x03` |
-| 2 | 1 | Flags | In Version 1 immer `0x00` |
-| 3 | 2 | Absender-ID | `UInt16`, Big Endian |
-| 5 | 2 | Empfänger-ID | `UInt16`, Big Endian |
-| 7 | 4 | Sequenznummer | `UInt32`, Big Endian |
-| 11 | 1 | Payloadlänge | Anzahl der folgenden Bytes |
-| 12 | 0–243 | Payload | Abhängig vom Nachrichtentyp |
+| 0 | 1 | Protocol version | `0x01` for this specification |
+| 1 | 1 | Message type | `Data=0x01`, `Ack=0x02`, `Error=0x03` |
+| 2 | 1 | Flags | Always `0x00` in version 1 |
+| 3 | 2 | Sender ID | `UInt16`, Big Endian |
+| 5 | 2 | Recipient ID | `UInt16`, Big Endian |
+| 7 | 4 | Sequence number | `UInt32`, Big Endian |
+| 11 | 1 | Payload length | Number of following bytes |
+| 12 | 0–243 | Payload | Depends on message type |
 
-Die gesamte Framegröße muss exakt `12 + Payloadlänge` entsprechen.
-Zusätzliche oder fehlende Bytes machen den Frame ungültig.
+The total frame size must be exactly `12 + payload length`. Additional or
+missing bytes make the frame invalid.
 
 ## 3. IDs
 
-- Gültige Geräte-IDs liegen zwischen 1 und 65534.
-- `0xFFFF` adressiert alle Geräte als Broadcast.
-- `0x0000` ist ungültig und darf weder als Absender noch als regulärer
-  Empfänger gesendet werden.
-- Ein Gerät verarbeitet nur Frames an seine eigene ID oder an `0xFFFF`.
-- Frames mit der eigenen ID als Absender werden verworfen.
+- Valid device IDs range from 1 to 65534.
+- `0xFFFF` addresses all devices as a broadcast.
+- `0x0000` is invalid and must not be sent as either sender or regular recipient.
+- A device processes only frames addressed to its own ID or to `0xFFFF`.
+- Frames with the local ID as sender are discarded.
 
-## 4. Nachrichtentypen
+## 4. Message Types
 
 ### 4.1 Data
 
-- Payloadlänge: 1 bis 243 Byte.
-- Direkt adressierte Frames werden mit einem `Ack` beantwortet.
-- Broadcast-Frames werden niemals bestätigt.
-- Die Interpretation als Text oder Binärdaten ist eine CLI-Eigenschaft und
-  nicht Teil des Wire-Formats.
+- Payload length: 1 to 243 bytes.
+- Directly addressed frames are answered with an `Ack`.
+- Broadcast frames are never acknowledged.
+- Interpretation as text or binary data is a CLI property and not part of the wire format.
 
 ### 4.2 Ack
 
-- Payloadlänge muss 0 sein.
-- Absender und Empfänger sind gegenüber dem bestätigten `Data`-Frame
-  vertauscht.
-- Die Sequenznummer entspricht exakt dem bestätigten `Data`-Frame.
-- ACKs an Broadcast sind ungültig.
-- Ein ACK bestätigt nur den technisch gültigen Empfang des P2P-Frames.
+- Payload length must be 0.
+- Sender and recipient are swapped relative to the acknowledged `Data` frame.
+- The sequence number exactly matches the acknowledged `Data` frame.
+- ACKs to broadcasts are invalid.
+- An ACK confirms only technically valid reception of the P2P frame.
 
 ### 4.3 Error
 
-Ein `Error` darf nur als Antwort auf einen syntaktisch gültigen, direkt
-adressierten Frame erzeugt werden, der nicht verarbeitet werden kann.
-Ungültige, beschädigte oder fremd adressierte Frames werden still verworfen.
+An `Error` may be generated only in response to a syntactically valid,
+directly addressed frame that cannot be processed. Invalid, damaged, or
+foreign-addressed frames are silently discarded.
 
-Die Error-Payload besteht aus:
+The Error payload consists of:
 
-| Offset | Größe | Feld |
+| Offset | Size | Field |
 | ---: | ---: | --- |
-| 0 | 1 | Fehlercode |
-| 1 | 0–242 | optionale UTF-8-Diagnose ohne Geheimnisse |
+| 0 | 1 | Error code |
+| 1 | 0–242 | Optional UTF-8 diagnostic without secrets |
 
-Fehlercodes der Version 1:
+Version 1 error codes:
 
-| Wert | Bedeutung |
+| Value | Meaning |
 | ---: | --- |
-| 1 | Nachrichtentyp oder Operation nicht unterstützt |
-| 2 | Empfänger vorübergehend beschäftigt |
-| 3 | Verarbeitung intern fehlgeschlagen |
+| 1 | Message type or operation not supported |
+| 2 | Recipient temporarily busy |
+| 3 | Internal processing failed |
 
-`Error` gilt nicht als Zustellbestätigung.
+`Error` does not count as delivery confirmation.
 
-## 5. Framevalidierung
+## 5. Frame Validation
 
-Ein Empfänger verwirft einen Frame ohne ACK, wenn mindestens eine Bedingung
-zutrifft:
+A recipient discards a frame without ACK if at least one condition applies:
 
-- Payload-CRC des RFM95 ist ungültig,
-- Frame ist kürzer als 12 Byte,
-- Version ist nicht `0x01`,
-- Flags sind nicht `0x00`,
-- Nachrichtentyp ist unbekannt,
-- Absender-ID ist 0 oder `0xFFFF`,
-- Empfänger-ID ist 0,
-- deklarierte und tatsächliche Payloadlänge unterscheiden sich,
-- Payloadregeln des Nachrichtentyps sind verletzt,
-- Empfänger-ID ist weder lokal noch Broadcast,
-- Absender-ID entspricht der lokalen ID.
+- RFM95 payload CRC is invalid,
+- frame is shorter than 12 bytes,
+- version is not `0x01`,
+- flags are not `0x00`,
+- message type is unknown,
+- sender ID is 0 or `0xFFFF`,
+- recipient ID is 0,
+- declared and actual payload lengths differ,
+- message type payload rules are violated,
+- recipient ID is neither local nor broadcast,
+- sender ID matches the local ID.
 
-Parserfehler dürfen keine teilweise initialisierten Frames zurückgeben.
+Parser errors must not return partially initialized frames.
 
-## 6. Sequenznummern
+## 6. Sequence Numbers
 
-- Jeder lokal erzeugte `Data`-Frame erhält eine neue `UInt32`-Sequenznummer.
-- Die initiale Sequenznummer wird bei jedem Prozessstart kryptografisch
-  zufällig gewählt.
-- Nach `UInt32.MaxValue` folgt 0.
-- Retries verwenden dieselbe Sequenznummer und denselben Frameinhalt.
-- `Ack` und `Error` übernehmen die Sequenznummer des auslösenden Frames.
+- Each locally generated `Data` frame receives a new `UInt32` sequence number.
+- The initial sequence number is selected cryptographically at random on each  process start.
+- 0 follows `UInt32.MaxValue`.
+- Retries use the same sequence number and the same frame content.
+- `Ack` and `Error` use the sequence number of the triggering frame.
 
-Die Sequenznummer allein bietet keine Replay-Sicherheit und darf später nicht
-als AES-GCM-Nonce verwendet werden.
+The sequence number alone provides no replay protection and must not later be
+used as an AES-GCM nonce.
 
-## 7. ACK- und Retry-Ablauf
+## 7. ACK and Retry Flow
 
-1. Der Sender überträgt einen direkt adressierten `Data`-Frame.
-2. Anschließend wartet er bis zu 2 Sekunden auf ein passendes ACK.
-3. Passend bedeutet: Typ `Ack`, erwartete Absender-ID, lokale Empfänger-ID und
-   identische Sequenznummer.
-4. Andere gültige Frames werden während der Wartezeit verarbeitet, verlängern
-   den ACK-Timeout aber nicht.
-5. Nach einem Timeout wartet der Sender zufällig 250 bis 1000 ms.
-6. Danach sendet er denselben Frame erneut.
-7. Nach dem ersten Versuch sind maximal drei Retries erlaubt, also insgesamt
-   höchstens vier Übertragungsversuche.
-8. Nach dem letzten Timeout wird ein expliziter Zustellfehler gemeldet.
+1. The sender transmits a directly addressed `Data` frame.
+2. It then waits up to 2 seconds for a matching ACK.
+3. Matching means: type `Ack`, expected sender ID, local recipient ID, and
+   identical sequence number.
+4. Other valid frames are processed during the wait, but do not extend the ACK timeout.
+5. After a timeout, the sender waits randomly for 250 to 1000 ms.
+6. It then retransmits the same frame.
+7. A maximum of three retries is allowed after the first attempt, for a total
+   of at most four transmission attempts.
+8. After the final timeout, an explicit delivery failure is reported.
 
-Die bereits im RFM9x-Treiber implementierte Duty-Cycle-Wartezeit gilt für
-jeden Versuch und jedes ACK. Der Backoff ersetzt diese Wartezeit nicht.
-Berechnung, Konfigurationswirkung, Implementierungsgrenzen und regulatorische
-Einordnung stehen in der
-[Dokumentation der Funkkonfiguration](../radio-configuration.md#5-duty-cycle).
+The duty-cycle wait already implemented in the RFM9x driver applies to every
+attempt and every ACK. Backoff does not replace this wait. Calculation,
+configuration effect, implementation limits, and regulatory context are
+described in the [radio configuration documentation](../radio-configuration.md#5-duty-cycle).
 
-## 8. ACK-Erzeugung
+## 8. ACK Generation
 
-Ein gültiger direkt adressierter `Data`-Frame wird nach 100 ms beantwortet.
-Die kurze Wartezeit ermöglicht dem Sender den Wechsel von TX nach RX.
+A valid directly addressed `Data` frame is answered after 100 ms. The short
+wait allows the sender to switch from TX to RX.
 
-Ein Duplikat wird erneut bestätigt, aber nicht erneut an die Anwendung
-ausgeliefert. Damit kann ein verlorenes ACK durch einen Retry geheilt werden.
+A duplicate is acknowledged again but not delivered to the application again.
+This allows a lost ACK to be recovered by a retry.
 
-## 9. Duplikaterkennung
+## 9. Duplicate Detection
 
-Der Empfänger hält pro Absender maximal 64 Kombinationen aus Sequenznummer und
-Empfangszeitpunkt. Ein Eintrag gilt 10 Minuten lang als bekannt.
+The recipient keeps a maximum of 64 combinations of sequence number and
+reception time per sender. An entry is considered known for 10 minutes.
 
-- Bekannter Frame: erneut ACK senden, nicht erneut ausliefern.
-- Neuer Frame: ausliefern, merken und ACK senden.
-- Älteste Einträge werden zuerst entfernt.
-- Der Cache ist sitzungsbezogen und wird nicht persistent gespeichert.
+- Known frame: send ACK again, do not deliver again.
+- New frame: deliver, record, and send ACK.
+- Oldest entries are removed first.
+- The cache is session-specific and is not persisted.
 
-Die zufällige initiale Sequenznummer reduziert Kollisionen nach einem Neustart.
+The random initial sequence number reduces collisions after a restart.
 
-## 10. Gleichzeitige Sendeversuche
+## 10. Simultaneous Transmission Attempts
 
-Überlappende Funkübertragungen können kollidieren. Bleiben dadurch ACKs aus,
-verteilen die zufälligen Backoffs die Retries zeitlich. Eine garantierte
-Kollisionsfreiheit besteht nicht.
+Overlapping radio transmissions can collide. If this causes ACKs to be lost,
+random backoffs distribute retries over time. Collision freedom is not
+guaranteed.
 
-Alle P2P-Transaktionen eines Geräts werden serialisiert. Eine zweite lokale
-Sendetransaktion wartet, bis die erste abgeschlossen oder fehlgeschlagen ist.
+All P2P transactions on a device are serialized. A second local send
+transaction waits until the first is complete or has failed.

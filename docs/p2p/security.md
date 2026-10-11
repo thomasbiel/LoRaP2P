@@ -1,83 +1,81 @@
-# Optionale AES-GCM-Ausbaustufe
+# Optional AES-GCM Extension
 
 ## Status
 
-AES-GCM ist nicht Teil des ersten P2P-Releases. Die unverschlüsselte Version
-wird zuerst implementiert und mit zwei Geräten abgenommen. Diese Datei hält
-die Sicherheitsanforderungen für ein separates Folge-Release fest.
+AES-GCM is not part of the first P2P release. The unencrypted version is
+implemented and accepted with two devices first. This file records the
+security requirements for a separate follow-up release.
 
-## Bedrohungsmodell
+## Threat Model
 
-Ohne Verschlüsselung kann ein Dritter im Funkbereich:
+Without encryption, a third party within radio range can:
 
-- Payloads mitlesen,
-- Frames mit fremden Absender-IDs erzeugen,
-- aufgezeichnete Frames erneut senden,
-- Inhalte manipulieren.
+- read payloads,
+- create frames with foreign sender IDs,
+- replay recorded frames,
+- manipulate content.
 
-LoRa-Payload-CRC schützt nur gegen Übertragungsfehler und bietet keine
-Authentifizierung.
+LoRa payload CRC protects only against transmission errors and provides no
+authentication.
 
-## Geplantes Verfahren
+## Planned Method
 
-- AES-GCM mit 256-Bit-Schlüssel,
-- 12-Byte-Nonce,
-- 16-Byte-Authentication-Tag,
-- Protokollkopf als Additional Authenticated Data,
-- Verschlüsselung nur der Anwendungs-Payload,
-- kein ACK für Frames mit ungültigem Tag.
+- AES-GCM with a 256-bit key,
+- 12-byte nonce,
+- 16-byte authentication tag,
+- protocol header as Additional Authenticated Data,
+- encryption of the application payload only,
+- no ACK for frames with an invalid tag.
 
-Ein verschlüsselter Data-Inhalt besteht aus:
+An encrypted Data content consists of:
 
 ```text
 Nonce (12 Byte) | Ciphertext (0–215 Byte) | Tag (16 Byte)
 ```
 
-Bei unveränderter RFM95-Grenze von 255 Byte und 12 Byte Protokollheader bleiben
-maximal 215 Byte Klartext.
+With the unchanged RFM95 limit of 255 bytes and a 12-byte protocol header, a
+maximum of 215 bytes of plaintext remains.
 
-## Nonce-Strategie
+## Nonce Strategy
 
-Die Sequenznummer reicht nicht als Nonce. Vorgesehen ist:
+The sequence number is not sufficient as a nonce. The planned strategy is:
 
-- 4 Byte zufälliges, pro Geräteinstallation persistiertes Salt,
-- 8 Byte persistenter monotoner Zähler,
-- atomare Reservierung von Zählerbereichen vor ihrer Verwendung.
+- 4-byte random salt persisted per device installation,
+- 8-byte persistent monotonically increasing counter,
+- atomic reservation of counter ranges before use.
 
-Ein Prozessabsturz darf zu übersprungenen Nonces führen, niemals zu
-Wiederverwendung. Zählerüberlauf blockiert weiteres verschlüsseltes Senden und
-verlangt Schlüsselrotation.
+A process crash may cause nonces to be skipped, but never reused. Counter
+overflow blocks further encrypted transmission and requires key rotation.
 
-## Schlüsselablage
+## Key Storage
 
-- Schlüssel niemals in `appsettings.json`, `p2p.json`, Logs oder Repository.
-- Laden über eine separate Datei oder einen Plattform-Secret-Store.
-- Linux-Datei nur für den Dienstbenutzer lesbar, typischerweise Modus `0600`.
-- Fehlerhafte Dateirechte erzeugen mindestens eine deutliche Warnung und
-  sollen im unbeaufsichtigten Betrieb den Start verhindern.
-- Schlüsselmaterial darf in Fehlermeldungen und Diagnosen nicht erscheinen.
+- Never store keys in `appsettings.json`, `p2p.json`, logs, or the repository.
+- Load them through a separate file or a platform secret store.
+- The Linux file must be readable only by the service user, typically mode
+  `0600`.
+- Incorrect file permissions produce at least a clear warning and should
+  prevent startup in unattended operation.
+- Key material must not appear in error messages or diagnostics.
 
-## Protokollerweiterung
+## Protocol Extension
 
-Flag-Bit 0 kennzeichnet zukünftig eine AES-GCM-Payload. Empfänger ohne
-implementierte Verschlüsselung verwerfen gesetzte Flags entsprechend
-Protokoll Version 1. Vor Aktivierung muss entschieden werden, ob:
+Flag bit 0 will identify an AES-GCM payload in the future. Recipients without
+implemented encryption discard set flags according to Protocol Version 1.
+Before activation, decide whether:
 
-- Version 1 um das Flag erweitert wird, oder
-- eine Protokollversion 2 eingeführt wird.
+- Version 1 is extended with the flag, or
+- protocol version 2 is introduced.
 
-Eine neue Version ist vorzuziehen, wenn sich ACK- oder Error-Authentifizierung
-ebenfalls ändert.
+A new version is preferable if ACK or Error authentication also changes.
 
-## Zusätzliche Tests
+## Additional Tests
 
-- erfolgreicher Encrypt/Decrypt-Roundtrip,
-- falscher Schlüssel,
-- manipulierte Header, Ciphertexte, Nonces und Tags,
-- wiederverwendete Nonce,
-- persistenter Zähler nach Neustart,
-- simulierte Abstürze während Zählerreservierung,
-- maximale verschlüsselte Payload,
-- keine ACKs für nicht authentifizierte Frames,
-- keine Schlüssel oder Klartexte in Logs.
-
+- successful encrypt/decrypt round trip,
+- incorrect key,
+- manipulated headers, ciphertexts, nonces, and tags,
+- reused nonce,
+- persistent counter after restart,
+- simulated crashes during counter reservation,
+- maximum encrypted payload,
+- no ACKs for unauthenticated frames,
+- no keys or plaintext in logs.

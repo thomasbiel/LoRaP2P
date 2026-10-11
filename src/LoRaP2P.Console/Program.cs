@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using CommandLine;
@@ -20,6 +21,8 @@ internal static class Program
 
     public static async Task<int> Main(string[] args)
     {
+        CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("en-US");
+        CultureInfo.DefaultThreadCurrentUICulture = CultureInfo.CurrentUICulture;
         using var shutdown = new CancellationTokenSource();
         System.Console.CancelKeyPress += (_, eventArgs) =>
         {

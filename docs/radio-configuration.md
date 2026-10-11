@@ -1,16 +1,16 @@
-# Funkkonfiguration (`appsettings.json`)
+# Radio Configuration (`appsettings.json`)
 
-Diese Datei dokumentiert alle Einstellungen der Funkkonfiguration. Die
-mitgelieferte [`appsettings.json`](../src/LoRaP2P.Console/appsettings.json)
-ist für einen Adafruit RFM95W Radio Bonnet am Raspberry Pi und Raw LoRa bei
-869,525 MHz vorkonfiguriert.
+This file documents all radio configuration settings. The included
+[`appsettings.json`](../src/LoRaP2P.Console/appsettings.json) is preconfigured
+for an Adafruit RFM95W Radio Bonnet on a Raspberry Pi and Raw LoRa at
+869.525 MHz.
 
-> Die Konfiguration ist keine automatische Zulässigkeitsprüfung. Insbesondere
-> validiert die Anwendung nicht, ob Frequenz, belegte Bandbreite,
-> Antennengewinn, effektive Strahlungsleistung, Duty Cycle und Geräteklasse
-> zusammen alle regulatorischen Anforderungen des Einsatzlandes erfüllen.
+> This configuration is not an automatic compliance check. In particular, the
+> application does not validate whether frequency, occupied bandwidth, antenna
+> gain, effective radiated power, duty cycle, and device class together satisfy
+> all regulatory requirements in the country of operation.
 
-## 1. Standardkonfiguration
+## 1. Default Configuration
 
 ```json
 {
@@ -33,297 +33,290 @@ ist für einen Adafruit RFM95W Radio Bonnet am Raspberry Pi und Raw LoRa bei
 }
 ```
 
-Alle kommunizierenden Geräte müssen dasselbe Funkprofil verwenden. Abweichende
-Frequenz, Modulationsparameter, Syncword, Header-Modus, CRC- oder
-IQ-Einstellung führen typischerweise dazu, dass Frames nicht empfangen oder
-als ungültig verworfen werden.
+All communicating devices must use the same radio profile. A different
+frequency, modulation parameter, sync word, header mode, CRC setting, or IQ
+setting will typically prevent frames from being received or cause them to be
+discarded as invalid.
 
-## 2. Hardware- und Transportparameter
+## 2. Hardware and Transport Parameters
 
-| Einstellung | Standard | Gültigkeit | Bedeutung |
+| Setting | Default | Validity | Meaning |
 | --- | ---: | --- | --- |
-| `SpiBusId` | `0` | Ganzzahl ≥ 0 | Nummer des Linux-SPI-Busses. Beim Bonnet ist dies SPI0. |
-| `ChipSelectLine` | `1` | Ganzzahl ≥ 0 | Chip-Select innerhalb des SPI-Busses. `1` entspricht bei SPI0 dem Anschluss CE1 beziehungsweise `/dev/spidev0.1`. |
-| `ResetPin` | `25` | BCM-GPIO ≥ 0 | Ausgang für den Hardware-Reset des RFM95. |
-| `Dio0Pin` | `22` | BCM-GPIO ≥ 0 | Eingang für `TxDone` und `RxDone`. Im normalen Betrieb wird die steigende Flanke ausgewertet. |
+| `SpiBusId` | `0` | Integer ≥ 0 | Linux SPI bus number. On the Bonnet, this is SPI0. |
+| `ChipSelectLine` | `1` | Integer ≥ 0 | Chip select within the SPI bus. On SPI0, `1` corresponds to CE1 or `/dev/spidev0.1`. |
+| `ResetPin` | `25` | BCM GPIO ≥ 0 | Output for the RFM95 hardware reset. |
+| `Dio0Pin` | `22` | BCM GPIO ≥ 0 | Input for `TxDone` and `RxDone`. During normal operation, the rising edge is evaluated. |
 
-`ResetPin` und `Dio0Pin` müssen verschieden sein. Die GPIO-Nummern sind
-BCM-Nummern, keine physischen Pin-Nummern des Raspberry-Pi-Headers.
+`ResetPin` and `Dio0Pin` must be different. GPIO numbers are BCM numbers, not
+physical pin numbers on the Raspberry Pi header.
 
-Im Modus `--check` werden keine TX- oder RX-Operationen ausgeführt. Deshalb
-wird dort DIO0 nicht angefordert; dies vermeidet Konflikte mit einer bereits
-belegten GPIO22-Leitung.
+In `--check` mode, no TX or RX operations are performed. DIO0 is therefore not
+requested in that mode, avoiding conflicts with an already-occupied GPIO22
+line.
 
-## 3. Frequenz und Modulation
+## 3. Frequency and Modulation
 
 ### `FrequencyHertz`
 
-- Standard: `869525000` Hz, also 869,525 MHz.
-- Von der Anwendung akzeptierter Bereich: 863 bis 870 MHz einschließlich.
-- Legt die Mittenfrequenz des LoRa-Signals fest.
+- Default: `869525000` Hz, or 869.525 MHz.
+- Range accepted by the application: 863 to 870 MHz inclusive.
+- Sets the LoRa signal's center frequency.
 
-Die reine Bereichsprüfung bedeutet nicht, dass jede Mittenfrequenz mit jeder
-Bandbreite und jedem Duty Cycle zulässig ist. Das vollständige belegte Signal
-muss innerhalb einer passenden Zuteilung liegen. Bei 125 kHz Bandbreite belegt
-ein auf 869,525 MHz zentriertes Signal näherungsweise 869,4625 bis
-869,5875 MHz.
+The range check alone does not mean that every center frequency is permitted
+with every bandwidth and duty cycle. The complete occupied signal must remain
+within an appropriate allocation. With 125 kHz bandwidth, a signal centered at
+869.525 MHz occupies approximately 869.4625 to 869.5875 MHz.
 
 ### `SpreadingFactor`
 
-Erlaubte Werte:
+Allowed values:
 
-| Wert | Wirkung |
+| Value | Effect |
 | --- | --- |
-| `Sf7` | höchste Datenrate und kürzeste Time-on-Air der angebotenen Werte |
-| `Sf8` bis `Sf11` | stufenweise robustere, aber langsamere Übertragung |
-| `Sf12` | höchste Empfindlichkeit und längste Time-on-Air |
+| `Sf7` | highest data rate and shortest time-on-air of the available values |
+| `Sf8` to `Sf11` | progressively more robust but slower transmission |
+| `Sf12` | highest sensitivity and longest time-on-air |
 
-Ein höherer Spreading Factor verlängert die Symboldauer exponentiell. Dadurch
-steigen Reichweite und Robustheit, aber auch Kanalbelegung,
-Duty-Cycle-Wartezeit und Energieverbrauch.
+A higher spreading factor increases symbol duration exponentially. This
+increases range and robustness, but also channel occupancy, duty-cycle waiting
+time, and energy consumption.
 
 ### `Bandwidth`
 
-Erlaubte Werte:
+Allowed values:
 
 - `Khz125`
 - `Khz250`
 - `Khz500`
 
-Eine größere Bandbreite erhöht die Datenrate und verkürzt die Time-on-Air,
-verringert aber typischerweise die Empfindlichkeit. Die Bandbreite bestimmt
-außerdem, welchen Frequenzbereich das Signal um die Mittenfrequenz belegt.
+A wider bandwidth increases data rate and shortens time-on-air, but typically
+reduces sensitivity. Bandwidth also determines the frequency range occupied by
+the signal around the center frequency.
 
 ### `CodingRate`
 
-Erlaubte Werte:
+Allowed values:
 
 - `FourOfFive`
 - `FourOfSix`
 - `FourOfSeven`
 - `FourOfEight`
 
-Mehr Redundanz, beispielsweise `FourOfEight`, verbessert die
-Fehlerkorrekturmöglichkeit, erhöht aber die Time-on-Air und senkt den
-Nutzdatendurchsatz.
+More redundancy, such as `FourOfEight`, improves error-correction capability,
+but increases time-on-air and reduces payload throughput.
 
 ### `OutputPowerDbm`
 
-- Standard: `14` dBm.
-- Von der Anwendung akzeptiert: 2 bis 17 dBm.
-- Steuert die Ausgangsleistung am PA-Boost-Ausgang des RFM95.
+- Default: `14` dBm.
+- Accepted by the application: 2 to 17 dBm.
+- Controls output power at the RFM95 PA boost output.
 
-14 dBm entsprechen näherungsweise 25 mW am Senderausgang. Der konfigurierte
-Wert ist jedoch nicht automatisch die regulatorisch relevante ERP oder EIRP:
-Antennengewinn, Kabel- und Steckerverluste sowie die Bezugsantenne müssen
-berücksichtigt werden. Eine Antenne mit Gewinn kann die effektive
-Strahlungsleistung über den zulässigen Wert anheben.
+14 dBm corresponds to approximately 25 mW at the transmitter output. However,
+the configured value is not automatically the ERP or EIRP relevant to
+regulation: antenna gain, cable and connector losses, and the reference
+antenna must be taken into account. A gain antenna can raise effective
+radiated power above the permitted value.
 
-17 dBm entsprechen näherungsweise 50 mW und sind die Obergrenze des normalen
-PA-Boost-Betriebs. Der vom RFM95 unterstützte +20-dBm-Modus benötigt weitere
-Registereinstellungen und strengere Betriebsbedingungen; der Treiber
-aktiviert ihn nicht.
+17 dBm corresponds to approximately 50 mW and is the upper limit of normal PA
+boost operation. The +20 dBm mode supported by the RFM95 requires additional
+register settings and stricter operating conditions; the driver does not enable
+it.
 
-#### ERP und EIRP
+#### ERP and EIRP
 
-**ERP** bedeutet *Effective Radiated Power*, auf Deutsch effektive
-Strahlungsleistung. Der Wert beschreibt die in die stärkste Abstrahlrichtung
-wirkende Leistung relativ zu einem idealen Halbwellendipol.
+**ERP** means *Effective Radiated Power*. It describes the power in the
+direction of strongest radiation relative to an ideal half-wave dipole.
 
-**EIRP** bedeutet *Equivalent Isotropically Radiated Power*. Dieser Wert
-verwendet eine theoretische isotrope, also in alle Richtungen gleichmäßig
-strahlende Antenne als Referenz.
+**EIRP** means *Equivalent Isotropically Radiated Power*. It uses a theoretical
+isotropic antenna, radiating evenly in all directions, as the reference.
 
-Für dieselbe reale Funkanlage gilt näherungsweise:
+For the same physical radio system, approximately:
 
 ```text
-EIRP in dBm = ERP in dBm + 2,15 dB
+EIRP in dBm = ERP in dBm + 2.15 dB
 ```
 
-Beispiele:
+Examples:
 
-| Leistung | ERP | entsprechende EIRP |
+| Power | ERP | corresponding EIRP |
 | --- | ---: | ---: |
-| 25 mW | 14 dBm | ungefähr 16,15 dBm |
-| 500 mW | 27 dBm | ungefähr 29,15 dBm |
+| 25 mW | 14 dBm | approximately 16.15 dBm |
+| 500 mW | 27 dBm | approximately 29.15 dBm |
 
-Vereinfacht ergibt sich die effektive Strahlungsleistung aus:
+In simplified form, effective radiated power is calculated as:
 
 ```text
-Senderleistung
-- Kabel- und Steckerverluste
-+ Antennengewinn gegenüber der jeweiligen Bezugsantenne
+Transmitter power
+- Cable and connector losses
++ Antenna gain relative to the applicable reference antenna
 ```
 
-`OutputPowerDbm` konfiguriert nur den Senderausgang des RFM95. Für einen
-regulatorischen Vergleich muss daraus zusammen mit der tatsächlich
-verwendeten Antenne ERP beziehungsweise EIRP bestimmt werden. ERP- und
-EIRP-Grenzwerte dürfen nicht ohne die Umrechnung von 2,15 dB miteinander
-verglichen werden.
+`OutputPowerDbm` configures only the RFM95 transmitter output. For a regulatory
+comparison, ERP or EIRP must be determined from it together with the antenna
+actually used. ERP and EIRP limits must not be compared without converting by
+2.15 dB.
 
 ### `PreambleSymbols`
 
-- Standard: `8`.
-- Minimum der Anwendung: `6`.
+- Default: `8`.
+- Application minimum: `6`.
 
-Die Präambel ermöglicht dem Empfänger Synchronisation und Paketerkennung.
-Mehr Symbole können die Erkennung unter schwierigen Bedingungen verbessern,
-verlängern aber jedes Paket.
+The preamble enables receiver synchronization and packet detection. More
+symbols can improve detection under difficult conditions, but lengthen every
+packet.
 
 ### `SyncWord`
 
-- Standard: `52` dezimal, entsprechend `0x34`.
-- Technischer Wertebereich: 0 bis 255.
+- Default: `52` decimal, corresponding to `0x34`.
+- Technical range: 0 to 255.
 
-Nur Geräte mit passendem Syncword erkennen einander zuverlässig. Das
-Syncword trennt Funknetze logisch, bietet aber weder Authentifizierung noch
-Verschlüsselung und ist kein Geheimnis.
+Only devices with a matching sync word reliably recognize one another. The sync
+word logically separates radio networks, but provides neither authentication
+nor encryption and is not secret.
 
-## 4. Frame- und Empfangseinstellungen
+## 4. Frame and Receive Settings
 
 ### `PayloadCrcEnabled`
 
-Aktiviert den Payload-CRC des RFM95. Bei `true` verwirft die Anwendung
-empfangene Pakete mit ungültigem CRC, bevor das P2P-Frame verarbeitet wird.
-Der CRC erkennt Übertragungsfehler, schützt aber nicht vor absichtlicher
-Manipulation.
+Enables the RFM95 payload CRC. When `true`, the application discards received
+packets with an invalid CRC before processing the P2P frame. The CRC detects
+transmission errors but does not protect against deliberate manipulation.
 
 ### `ImplicitHeader`
 
-- Standard: `false`.
-- `false` verwendet den expliziten LoRa-Header mit Payloadlänge.
-- `true` entfernt diesen Header und setzt voraus, dass Sender und Empfänger
-  die Paketparameter einschließlich der Länge vorab identisch kennen.
+- Default: `false`.
+- `false` uses the explicit LoRa header with payload length.
+- `true` removes this header and requires sender and receiver to know the packet
+  parameters, including length, identically in advance.
 
-Das P2P-Protokoll verwendet variable Payloadlängen. Deshalb soll
-`ImplicitHeader` für den normalen LoRaP2P-Betrieb `false` bleiben.
+The P2P protocol uses variable payload lengths. Therefore, `ImplicitHeader`
+should remain `false` for normal LoRaP2P operation.
 
 ### `InvertIq`
 
-- Standard: `false`.
-- Invertiert bei `true` die LoRa-I/Q-Polarität.
+- Default: `false`.
+- When `true`, inverts LoRa I/Q polarity.
 
-Sender und Empfänger müssen kompatible Einstellungen verwenden. Für direkte
-Raw-LoRa-P2P-Kommunikation wird normalerweise auf beiden Seiten `false`
-verwendet.
+Sender and receiver must use compatible settings. Direct Raw LoRa P2P
+communication normally uses `false` on both sides.
 
 ### `OperationTimeout`
 
-- Standard: fünf Sekunden im .NET-`TimeSpan`-Format `00:00:05`.
-- Muss größer als null sein.
+- Default: five seconds in .NET `TimeSpan` format `00:00:05`.
+- Must be greater than zero.
 
-Der Timeout begrenzt beim Senden die Wartezeit auf die lokale
-`TxDone`-Signalisierung über DIO0. Er bestätigt keinen Empfang durch eine
-Gegenstelle. Empfangsbefehle und P2P-ACKs besitzen eigene Timeouts.
+During transmission, the timeout limits the wait for the local `TxDone` signal
+through DIO0. It does not confirm reception by a peer. Receive commands and P2P
+ACKs have their own timeouts.
 
 ## 5. Duty Cycle
 
-### Bedeutung
+### Meaning
 
-`DutyCycle` ist ein dimensionsloser Anteil:
+`DutyCycle` is a dimensionless fraction:
 
-- Standard: `0.1`, also 10 % im deutschen Band 54 bei
-  869,4–869,65 MHz.
+- Default: `0.1`, or 10% in German band 54 at
+  869.4–869.65 MHz.
 
-| JSON-Wert | Prozent |
+| JSON value | Percent |
 | ---: | ---: |
-| `0.001` | 0,1 % |
-| `0.01` | 1 % |
-| `0.1` | 10 % |
-| `1.0` | 100 % |
+| `0.001` | 0.1% |
+| `0.01` | 1% |
+| `0.1` | 10% |
+| `1.0` | 100% |
 
-Die EU-Definition verwendet das Verhältnis
-
-```text
-Duty Cycle = Summe der Sendezeiten / Beobachtungszeitraum
-```
-
-Der reguläre Beobachtungszeitraum beträgt, sofern nicht anders festgelegt,
-eine kontinuierliche Stunde. Ein Grenzwert ist eine Obergrenze: Ein kleinerer
-Duty Cycle ist konservativer und regulatorisch nicht problematischer.
-
-### Umsetzung in LoRaP2P
-
-Nach jeder Übertragung berechnet der Treiber die erforderliche Sendepause:
+The EU definition uses the ratio
 
 ```text
-Sendepause = Time-on-Air × (1 / DutyCycle - 1)
+Duty Cycle = Sum of transmission times / observation period
 ```
 
-Bei der Standardeinstellung `DutyCycle = 0.1` folgt auf 400 ms Sendezeit eine
-Pause von 3,6 Sekunden. Bei `DutyCycle = 0.01` wären es 39,6 Sekunden. Der
-nächste lokale Sendevorgang wartet automatisch bis zum berechneten Zeitpunkt.
+Unless specified otherwise, the regular observation period is one continuous
+hour. A limit is an upper bound: a lower duty cycle is more conservative and
+does not create a regulatory problem.
 
-Diese Begrenzung gilt für alle lokalen Übertragungen:
+### Implementation in LoRaP2P
 
-- normale Raw-LoRa-Pakete,
-- P2P-Datenframes,
-- Broadcasts,
+After each transmission, the driver calculates the required transmission pause:
+
+```text
+Transmission pause = Time-on-Air × (1 / DutyCycle - 1)
+```
+
+With the default setting `DutyCycle = 0.1`, 400 ms of transmission time is
+followed by a 3.6-second pause. With `DutyCycle = 0.01`, it would be 39.6
+seconds. The next local transmission waits automatically until the calculated
+time.
+
+This limit applies to all local transmissions:
+
+- normal Raw LoRa packets,
+- P2P data frames,
+- broadcasts,
 - ACKs,
-- Retries und Error-Frames.
+- retries and error frames.
 
-Empfangszeit zählt nicht als Sendezeit. Jedes Gerät führt seine eigene
-Begrenzung. Der implementierte Algorithmus erzwingt nach jedem Paket eine
-Pause und ist damit bei Burst-Verkehr konservativer als eine reine
-Stundenbilanz. Nicht implementiert sind:
+Receive time does not count as transmission time. Each device maintains its own
+limit. The implemented algorithm enforces a pause after every packet and is
+therefore more conservative for burst traffic than a pure hourly balance. The
+following are not implemented:
 
-- getrennte Airtime-Konten je regulatorischem Teilband,
-- ein über eine Stunde angesammeltes und später nutzbares Sendebudget,
+- separate airtime accounts for each regulatory sub-band,
+- a transmission budget accumulated over an hour and available later,
 - Listen Before Talk (LBT),
 - Adaptive Frequency Agility (AFA),
-- automatische Auswahl regulatorisch passender Frequenzen,
-- automatische Berücksichtigung von Antennengewinn oder nationalen Regeln.
+- automatic selection of regulatory-compliant frequencies,
+- automatic consideration of antenna gain or national rules.
 
-Die Validierung akzeptiert technisch Werte größer als 10 % bis maximal `1.0`.
-Das ist keine Aussage über deren rechtliche Zulässigkeit.
+Validation technically accepts values above 10% up to a maximum of `1.0`.
+This is not a statement about their legal permissibility.
 
-## 6. EU868: regulatorische Orientierung
+## 6. EU868: Regulatory Guidance
 
-Für das gesamte EU868-Spektrum existiert kein einzelner maximaler Duty Cycle.
-Die Grenze hängt von Teilband, Geräteklasse, effektiver Strahlungsleistung,
-Bandbreite, Kanalzugriffsverfahren und nationaler Umsetzung ab.
+There is no single maximum duty cycle for the entire EU868 spectrum. The limit
+depends on sub-band, device class, effective radiated power, bandwidth, channel
+access method, and national implementation.
 
-Für nicht-spezifische Short Range Devices wird häufig folgende
-ETSI-/CEPT-Teilbandübersicht verwendet:
+The following ETSI/CEPT sub-band overview is commonly used for non-specific
+Short Range Devices:
 
-| Bezeichnung | Frequenzbereich | typischer maximaler Duty Cycle | typische maximale ERP |
+| Designation | Frequency range | typical maximum duty cycle | typical maximum ERP |
 | --- | --- | ---: | ---: |
-| K | 863,0–865,0 MHz | 0,1 % | 25 mW |
-| L | 865,0–868,0 MHz | 1 % | 25 mW |
-| M | 868,0–868,6 MHz | 1 % | 25 mW |
-| N | 868,7–869,2 MHz | 0,1 % | 25 mW |
-| P | 869,4–869,65 MHz | 10 % | 500 mW |
-| Q | 869,7–870,0 MHz | 1 % | 25 mW |
+| K | 863.0–865.0 MHz | 0.1% | 25 mW |
+| L | 865.0–868.0 MHz | 1% | 25 mW |
+| M | 868.0–868.6 MHz | 1% | 25 mW |
+| N | 868.7–869.2 MHz | 0.1% | 25 mW |
+| P | 869.4–869.65 MHz | 10% | 500 mW |
+| Q | 869.7–870.0 MHz | 1% | 25 mW |
 
-Die Zwischenbereiche sind in dieser vereinfachten Tabelle nicht als
-allgemeine Ausweichfrequenzen freigegeben. Sie können anderen Anwendungen
-oder Bedingungen zugeordnet sein.
+The intermediate ranges are not approved as general fallback frequencies in
+this simplified table. They may be assigned to other applications or
+conditions.
 
-### Standardkonfiguration für Deutschland: 869,4–869,65 MHz
+### Default Configuration for Germany: 869.4–869.65 MHz
 
-In Deutschland gilt seit November 2025 die Allgemeinzuteilung
-**Vfg. 91/2025** der Bundesnetzagentur. Sie ersetzt unter anderem die frühere
-Vfg. 133/2019 und ist bis zum 31. Dezember 2035 befristet.
+In Germany, the **Vfg. 91/2025** general allocation of the Federal Network
+Agency has applied since November 2025. Among other things, it replaces the
+former Vfg. 133/2019 and is limited until December 31, 2035.
 
-Band 54 der Vfg. 91/2025 legt für 869,4–869,65 MHz fest:
+Band 54 of Vfg. 91/2025 specifies the following for 869.4–869.65 MHz:
 
-| Merkmal | Bedingung |
+| Feature | Condition |
 | --- | --- |
-| Gerätekategorie | Geräte geringer Reichweite für nicht näher spezifizierte Anwendungen |
-| maximale Sendeleistung | 500 mW ERP |
-| Kanalzugang | geeignete Frequenzzugangs- und Störungsminderungstechniken |
-| Alternative zum Kanalzugangsverfahren | Arbeitszyklus ≤ 10 % |
+| Device category | Short-range devices for non-specific applications |
+| maximum transmit power | 500 mW ERP |
+| channel access | appropriate spectrum access and interference mitigation techniques |
+| alternative to the channel access method | duty cycle ≤ 10% |
 
-Die Definition dieser Gerätekategorie nennt allgemeine Datenübertragung
-ausdrücklich als übliche Verwendung. Raw-LoRa-P2P kann daher grundsätzlich
-unter Band 54 betrieben werden, sofern sämtliche technischen Bedingungen
-eingehalten werden.
+The definition of this device category explicitly names general data
+transmission as a typical use. Raw LoRa P2P can therefore generally operate
+under band 54, provided that all technical conditions are met.
 
-LoRaP2P implementiert derzeit kein qualifiziertes Frequenzzugangs- oder
-Störungsminderungsverfahren. Für die vorhandene Implementierung ist deshalb
-die ausdrücklich genannte Alternative `DutyCycle = 0.1` maßgeblich.
+LoRaP2P currently implements no qualified spectrum access or interference
+mitigation method. For the current implementation, the explicitly named
+alternative `DutyCycle = 0.1` is therefore applicable.
 
-Die Standardkonfiguration verwendet mit dem vorhandenen 125-kHz-Profil:
+The default configuration uses the existing 125 kHz profile:
 
 ```json
 {
@@ -334,77 +327,78 @@ Die Standardkonfiguration verwendet mit dem vorhandenen 125-kHz-Profil:
 }
 ```
 
-Das auf 869,525 MHz zentrierte 125-kHz-Signal belegt näherungsweise
-869,4625–869,5875 MHz und liegt damit innerhalb des zugeteilten Teilbands.
-500 mW ERP sind eine Obergrenze, keine erforderliche Sendeleistung. Der
-Standard betreibt den RFM95-Ausgang weiterhin mit 14 dBm, also ungefähr 25 mW
-vor Berücksichtigung von Antenne und Verlusten. Konfigurierbar sind bis zu
-17 dBm, also ungefähr 50 mW.
+The 125 kHz signal centered at 869.525 MHz occupies approximately
+869.4625–869.5875 MHz and is therefore within the allocated sub-band. 500 mW
+ERP is an upper limit, not a required transmit power. The default still
+operates the RFM95 output at 14 dBm, or approximately 25 mW before accounting
+for antenna and losses. Up to 17 dBm, or approximately 50 mW, can be
+configured.
 
-Die Änderung von 1 % auf 10 % verkürzt die vorgeschriebene Pause von der
-99-fachen auf die 9-fache Time-on-Air. Bei unverändertem SF7/BW125/CR-4/5-Profil
-steigt dadurch der langfristige maximale Nutzdatendurchsatz ungefähr von
-6,1 Byte/s auf 60,8 Byte/s. Die momentane physikalische Datenrate ändert sich
-nicht.
+Changing from 1% to 10% reduces the required pause from 99 times to 9 times
+time-on-air. With the SF7/BW125/CR-4/5 profile unchanged, this increases the
+long-term maximum payload throughput from approximately 6.1 bytes/s to 60.8
+bytes/s. The instantaneous physical data rate does not change.
 
-Weiterhin zu beachten:
+The following also remains important:
 
-- Die gesamte Aussendung muss im Teilband bleiben; BW500 ist dafür zu breit.
-- Antennengewinn und Verluste müssen in die ERP-Berechnung eingehen.
-- Daten, ACKs, Retries und Broadcasts zählen jeweils zum Arbeitszyklus des
-  sendenden Geräts.
-- Die Frequenzen werden nicht exklusiv, nichtstörend und ungeschützt genutzt.
-  Es besteht weder Störungsschutz noch eine garantierte Übertragungsqualität.
-- Die Funkanlage muss das Funkanlagengesetz und die anwendbaren
-  harmonisierten Normen erfüllen.
-- Der Nutzer ist laut Allgemeinzuteilung für die Einhaltung der Bedingungen
-  verantwortlich.
+- The entire transmission must remain within the sub-band; BW500 is too wide
+  for this.
+- Antenna gain and losses must be included in the ERP calculation.
+- Data, ACKs, retries, and broadcasts each count toward the transmitting
+  device's duty cycle.
+- The frequencies are used non-exclusively, without interference protection,
+  and without protection from interference. There is neither interference
+  protection nor guaranteed transmission quality.
+- The radio equipment must comply with the German Radio Equipment Act and the
+  applicable harmonized standards.
+- Under the general allocation, the user is responsible for complying with the
+  conditions.
 
-### Alternative Kanalzugriffsverfahren
+### Alternative Channel Access Methods
 
-Bestimmte regulatorische Zuteilungen erlauben statt eines festen
-Duty-Cycle-Grenzwerts geeignete Spektrumzugangs- und
-Störungsminderungstechniken, beispielsweise LBT mit AFA. Das ist keine
-pauschale Freigabe für Dauerbetrieb. Das Verfahren muss die Anforderungen der
-einschlägigen harmonisierten Norm und der konkreten Zuteilung erfüllen.
+Some regulatory allocations permit appropriate spectrum access and interference
+mitigation techniques, such as LBT with AFA, instead of a fixed duty-cycle
+limit. This is not a general authorization for continuous operation. The method
+must meet the requirements of the relevant harmonized standard and the specific
+allocation.
 
-LoRaP2P implementiert derzeit kein LBT/AFA. Das bloße Lauschen mit
-`ReceiveSingleAsync` ist kein normkonformes LBT-Verfahren. Deshalb darf der
-Duty Cycle nicht mit der Begründung erhöht werden, die Anwendung könne
-grundsätzlich empfangen.
+LoRaP2P currently implements no LBT/AFA. Merely listening with
+`ReceiveSingleAsync` is not a standards-compliant LBT method. Therefore, the
+duty cycle must not be increased on the grounds that the application can in
+principle receive.
 
-### Nationale Prüfung
+### National Review
 
-Die obige Bewertung bestätigt die deutsche Frequenzzuteilung, ersetzt aber
-keine Konformitätsbewertung der konkreten Funkanlage. Vor einem produktiven
-Betrieb sind mindestens zu prüfen:
+The assessment above confirms the German frequency allocation, but does not
+replace a conformity assessment of the specific radio equipment. Before
+production operation, at least the following must be checked:
 
-1. Gerätekonformität nach Funkanlagengesetz und Radio Equipment Directive,
-2. anwendbare harmonisierte Norm und Messverfahren,
-3. effektive Strahlungsleistung der vollständigen Antennenanlage,
-4. Aktualität und Fortgeltung der Vfg. 91/2025.
+1. equipment conformity under the German Radio Equipment Act and the Radio Equipment Directive,
+2. applicable harmonized standard and measurement methods,
+3. effective radiated power of the complete antenna system,
+4. current validity and continued applicability of Vfg. 91/2025.
 
-## 7. Quellen und Stand
+## 7. Sources and Status
 
-Stand dieser Dokumentation: 20. September 2026.
+Documentation status: September 20, 2026.
 
-- Europäische Kommission, Durchführungsbeschluss (EU) 2022/172 mit der
-  Definition des Duty Cycle und harmonisierten technischen Bedingungen:
+- European Commission, Implementing Decision (EU) 2022/172 with the definition
+  of duty cycle and harmonized technical conditions:
   <https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32022D0172>
-- CEPT, aktuelle Einstiegsseite zu ERC Recommendation 70-03 und Verweis auf
-  EFIS für nationale Umsetzungen:
+- CEPT, current entry page for ERC Recommendation 70-03 and link to EFIS for
+  national implementations:
   <https://docdb.cept.org/document/845>
-- CEPT EFIS, nationale SRD-Regelungen:
+- CEPT EFIS, national SRD regulations:
   <https://efis.cept.org/sitecontent.jsp?sitecontent=srd_regulations>
-- Bundesnetzagentur, Allgemeinzuteilung für SRD, Vfg. 91/2025, insbesondere
-  Tabelle 1, Band 54 in Tabelle 2 und Erläuterung [7]:
+- Federal Network Agency, general allocation for SRD, Vfg. 91/2025, in
+  particular Table 1, band 54 in Table 2, and note [7]:
   <https://www.bundesnetzagentur.de/DE/Fachthemen/Telekommunikation/Frequenzen/Allgemeinzuteilungen/_DL/vfg91_2025.pdf?__blob=publicationFile&v=3>
-- ETSI EN 300 220-2, harmonisierte Norm für Short Range Devices:
+- ETSI EN 300 220-2, harmonized standard for Short Range Devices:
   <https://www.etsi.org/deliver/etsi_en/300200_300299/30022002/>
-- The Things Network, zusammenfassende EU863-870-Teilbandtabelle mit
-  Verweisen auf ETSI EN 300 220:
+- The Things Network, summary EU863-870 sub-band table with references to ETSI
+  EN 300 220:
   <https://www.thethingsnetwork.org/docs/lorawan/regional-parameters/eu868/>
 
-Die zusammenfassende Teilbandtabelle dient der technischen Orientierung.
-Bei Abweichungen haben aktuelle EU-Vorgaben, nationale Regelungen und die
-anwendbare harmonisierte Norm Vorrang.
+The summary sub-band table is provided for technical guidance. In case of
+discrepancies, current EU requirements, national regulations, and the
+applicable harmonized standard take precedence.

@@ -1,74 +1,72 @@
-# P2P-Ausbaustufe
+# P2P Extension
 
-Dieses Verzeichnis konkretisiert die Raw-LoRa-Zwei-Wege-Kommunikation
-aus [Abschnitt 12 des PRD](../PRD.md#12-raw-lora-zwei-wege-kommunikation).
+This directory specifies the Raw LoRa two-way communication from [section 12 of the PRD](../PRD.md#12-raw-lora-two-way-communication).
 
-Protokollkern, Persistenz, Konsolenbefehle und hardwarefreie Tests sind
-implementiert. Offen sind die bidirektionale Hardwareabnahme mit zwei Geräten
-und die optionale AES-GCM-Ausbaustufe.
+Protocol core, persistence, console commands, and hardware-free tests are
+implemented. Open items are two-device bidirectional hardware acceptance and
+the optional AES-GCM extension.
 
-## Ziel
+## Goal
 
-Zwei LoRaP2P-Geräte sollen adressierte Raw-LoRa-Nachrichten austauschen,
-Empfangsbestätigungen senden, verlorene Übertragungen wiederholen und
-Duplikate unterdrücken. Broadcasts werden ohne ACK übertragen.
+Two LoRaP2P devices shall exchange addressed Raw LoRa messages, send
+acknowledgements, retry lost transmissions, and suppress duplicates. Broadcasts
+are transmitted without ACKs.
 
-LoRaWAN, ein Gateway, ein Network Server und Internetzugriff sind dafür nicht
-erforderlich.
+LoRaWAN, a gateway, a network server, and Internet access are not required.
 
-## Festgelegte Produktentscheidungen
+## Fixed Product Decisions
 
-| Thema | Entscheidung |
+| Topic | Decision |
 | --- | --- |
-| Geräte-ID | 16-Bit-Zahl von 1 bis 65534 |
-| Broadcast-ID | 65535 (`0xFFFF`) |
-| Ungültige/unvergebene ID | 0 |
-| Byte-Reihenfolge | Network Byte Order, Big Endian |
-| ACK-Timeout | 2 Sekunden |
-| Wiederholungen | maximal 3 Retries nach dem ersten Versuch |
-| Backoff | zufällig 250 bis 1000 ms |
-| ACK-Wartezeit des Empfängers | 100 ms |
-| Peer-Konfiguration | separate persistente JSON-Datei ohne Geheimnisse |
-| Nachrichtenpersistenz | JSONL je lokaler ID und Gegenstelle unter `~/LoRaP2P/sessions` |
-| Chat-Export | eigenständiges HTML über `export-chat` |
-| `listen` beenden | Strg+C beendet die gesamte Anwendung |
-| Verschlüsselung | separate spätere Phase; erstes P2P-Release unverschlüsselt |
+| Device ID | 16-bit number from 1 to 65534 |
+| Broadcast ID | 65535 (`0xFFFF`) |
+| Invalid/unassigned ID | 0 |
+| Byte order | Network Byte Order, Big Endian |
+| ACK timeout | 2 seconds |
+| Retries | maximum 3 retries after the first attempt |
+| Backoff | random 250 to 1000 ms |
+| Receiver ACK wait | 100 ms |
+| Peer configuration | separate persistent JSON file without secrets |
+| Message persistence | JSONL per local ID and peer under `~/LoRaP2P/sessions` |
+| Chat export | standalone HTML via `export-chat` |
+| Stop `listen` | Ctrl+C terminates the entire application |
+| Encryption | separate later phase; first P2P release unencrypted |
 
-## Dokumente
+## Documents
 
-- [Funkkonfiguration](../radio-configuration.md): sämtliche Felder der
-  `appsettings.json`, Time-on-Air, Duty Cycle und EU868-Rahmenbedingungen.
-- [Protokollspezifikation](protocol-v1.md): binäres Wire-Format,
-  Validierung, ACKs, Retries und Duplikate.
-- [Zielarchitektur](architecture.md): Komponenten, Abhängigkeiten,
-  Zustände und Datenflüsse.
-- [Umsetzungsplan](implementation-plan.md): Reihenfolge, Arbeitspakete,
-  Abhängigkeiten und Definition of Done.
-- [Test- und Betriebsplan](test-and-operations.md): Unit-Tests,
-  CLI-Verhalten, Konfiguration und Hardwareabnahme.
-- [Sicherheitsausbaustufe](security.md): spätere optionale
-  AES-GCM-Integration und Schlüsselverwaltung.
+- [Radio configuration](../radio-configuration.md): all fields of
+  `appsettings.json`, time-on-air, duty cycle, and EU868 constraints.
+- [Protocol specification](protocol-v1.md): binary wire format,
+  validation, ACKs, retries, and duplicates.
+- [Target architecture](architecture.md): components, dependencies,
+  states, and data flows.
+- [Implementation plan](implementation-plan.md): order, work packages,
+  dependencies, and Definition of Done.
+- [Test and operations plan](test-and-operations.md): unit tests,
+  CLI behavior, configuration, and hardware acceptance.
+- [Security extension](security.md): later optional AES-GCM integration
+  and key management.
 
-## Abgrenzung des ersten P2P-Releases
+## Scope of the First P2P Release
 
-Enthalten:
+Included:
 
-- versionierte Frames,
-- adressierte Daten und Broadcasts,
-- ACK, Timeout, Retry und zufälliger Backoff,
-- Duplikatunterdrückung,
-- Peer-Registry und Sitzungsstatistiken,
-- sämtliche Befehle aus PRD 12.6,
-- JSONL-Sitzungspersistenz und HTML-Chat-Export,
-- hardwarefreie NUnit-Tests,
-- bidirektionale Abnahme mit zwei RFM9x-Geräten.
+- versioned frames,
+- addressed data and broadcasts,
+- ACK, timeout, retry, and random backoff,
+- duplicate suppression,
+- peer registry and session statistics,
+- all commands from PRD 12.6,
+- JSONL session persistence and HTML chat export,
+- hardware-free NUnit tests,
+- bidirectional acceptance with two RFM9x devices.
 
-Nicht enthalten:
+Not included:
 
 - LoRaWAN,
-- Routing über mehrere Hops,
-- Gruppenadressen außer Broadcast,
-- Fragmentierung von Payloads über mehrere Funkframes,
-- persistente Nachrichtenwarteschlangen,
-- automatische Peer-Erkennung,
-- AES-GCM im ersten P2P-Release.
+- routing over multiple hops,
+- group addresses other than broadcast,
+- fragmentation of payloads across multiple radio frames,
+- persistent message queues,
+- automatic peer discovery,
+- AES-GCM in the first P2P release.
