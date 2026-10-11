@@ -14,10 +14,10 @@ public readonly record struct P2pNodeId
             throw new ArgumentOutOfRangeException(nameof(value), value, "A node ID must be between 1 and 65534.");
         }
 
-        Value = value;
+        this.Value = value;
     }
 
     public ushort Value { get; }
 
-    public override string ToString() => Value.ToString(CultureInfo.InvariantCulture);
+    public override string ToString() => this.Value.ToString(CultureInfo.InvariantCulture);
 }

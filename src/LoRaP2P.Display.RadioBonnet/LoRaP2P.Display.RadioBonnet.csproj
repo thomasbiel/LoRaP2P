@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <PackageReference Include="System.Device.Gpio" />
+    <InternalsVisibleTo Include="LoRaP2P.Console.Tests" />
+  </ItemGroup>
+</Project>

@@ -29,9 +29,9 @@ public sealed class P2pDeliveryException : Exception
     public P2pDeliveryException(P2pNodeId peer, uint sequenceNumber, int attempts)
         : base($"Peer {peer} did not acknowledge sequence {sequenceNumber} after {attempts} attempts.")
     {
-        Peer = peer;
-        SequenceNumber = sequenceNumber;
-        Attempts = attempts;
+        this.Peer = peer;
+        this.SequenceNumber = sequenceNumber;
+        this.Attempts = attempts;
     }
 
     public P2pNodeId Peer { get; }
@@ -48,14 +48,14 @@ public interface IP2pDelay
 
 public sealed class TimeProviderP2pDelay : IP2pDelay
 {
-    private readonly TimeProvider _timeProvider;
+    private readonly TimeProvider timeProvider;
 
     public TimeProviderP2pDelay(TimeProvider timeProvider)
     {
         ArgumentNullException.ThrowIfNull(timeProvider);
-        _timeProvider = timeProvider;
+        this.timeProvider = timeProvider;
     }
 
     public Task DelayAsync(TimeSpan delay, CancellationToken cancellationToken) =>
-        Task.Delay(delay, _timeProvider, cancellationToken);
+        Task.Delay(delay, this.timeProvider, cancellationToken);
 }

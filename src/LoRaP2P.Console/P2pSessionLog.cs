@@ -17,24 +17,24 @@ internal sealed class P2pSessionLog : IDisposable
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase
     };
 
-    private readonly Lock _lock = new();
-    private readonly string _directory;
-    private readonly TimeProvider _timeProvider;
-    private readonly Dictionary<SessionKey, StreamWriter> _writers = [];
-    private bool _disposed;
+    private readonly Lock syncLock = new();
+    private readonly string directory;
+    private readonly TimeProvider timeProvider;
+    private readonly Dictionary<SessionKey, StreamWriter> writers = [];
+    private bool disposed;
 
     public P2pSessionLog(string? directory = null, TimeProvider? timeProvider = null)
     {
-        _directory = Path.GetFullPath(directory ?? GetDefaultDirectory());
-        _timeProvider = timeProvider ?? TimeProvider.System;
+        this.directory = Path.GetFullPath(directory ?? GetDefaultDirectory());
+        this.timeProvider = timeProvider ?? TimeProvider.System;
     }
 
-    public string DirectoryPath => _directory;
+    public string DirectoryPath => this.directory;
 
     public void AppendReceived(P2pNodeId localNodeId, P2pReceivedMessage message)
     {
         ArgumentNullException.ThrowIfNull(message);
-        Append(
+        this.Append(
             new P2pSessionMessage
             {
                 Timestamp = message.ReceivedAt,
@@ -61,10 +61,10 @@ internal sealed class P2pSessionLog : IDisposable
         int attempts)
     {
         var normalizedPayloadType = NormalizePayloadType(payloadType);
-        Append(
+        this.Append(
             new P2pSessionMessage
             {
-                Timestamp = _timeProvider.GetUtcNow(),
+                Timestamp = this.timeProvider.GetUtcNow(),
                 Direction = "outgoing",
                 LocalNodeId = localNodeId.Value,
                 PeerNodeId = peer.Value,
@@ -84,10 +84,10 @@ internal sealed class P2pSessionLog : IDisposable
         string payloadType)
     {
         var normalizedPayloadType = NormalizePayloadType(payloadType);
-        Append(
+        this.Append(
             new P2pSessionMessage
             {
-                Timestamp = _timeProvider.GetUtcNow(),
+                Timestamp = this.timeProvider.GetUtcNow(),
                 Direction = "broadcast",
                 LocalNodeId = localNodeId.Value,
                 PeerNodeId = ushort.MaxValue,
@@ -102,20 +102,20 @@ internal sealed class P2pSessionLog : IDisposable
 
     public void Dispose()
     {
-        lock (_lock)
+        lock (this.syncLock)
         {
-            if (_disposed)
+            if (this.disposed)
             {
                 return;
             }
 
-            _disposed = true;
-            foreach (var writer in _writers.Values)
+            this.disposed = true;
+            foreach (var writer in this.writers.Values)
             {
                 writer.Dispose();
             }
 
-            _writers.Clear();
+            this.writers.Clear();
         }
     }
 
@@ -157,10 +157,10 @@ internal sealed class P2pSessionLog : IDisposable
         message.Validate();
         var json = JsonSerializer.Serialize(message, JsonOptions);
 
-        lock (_lock)
+        lock (this.syncLock)
         {
-            ObjectDisposedException.ThrowIf(_disposed, this);
-            var writer = GetOrCreateWriter(new SessionKey(message.LocalNodeId, message.PeerNodeId));
+            ObjectDisposedException.ThrowIf(this.disposed, this);
+            var writer = this.GetOrCreateWriter(new SessionKey(message.LocalNodeId, message.PeerNodeId));
             writer.WriteLine(json);
             writer.Flush();
         }
@@ -168,13 +168,13 @@ internal sealed class P2pSessionLog : IDisposable
 
     private StreamWriter GetOrCreateWriter(SessionKey key)
     {
-        if (_writers.TryGetValue(key, out var writer))
+        if (this.writers.TryGetValue(key, out var writer))
         {
             return writer;
         }
 
-        Directory.CreateDirectory(_directory);
-        var timestamp = _timeProvider.GetUtcNow().ToString(
+        Directory.CreateDirectory(this.directory);
+        var timestamp = this.timeProvider.GetUtcNow().ToString(
             "yyyyMMdd'T'HHmmssfff'Z'",
             CultureInfo.InvariantCulture);
         var peer = key.PeerNodeId == ushort.MaxValue
@@ -185,7 +185,7 @@ internal sealed class P2pSessionLog : IDisposable
         for (var suffix = 0; ; suffix++)
         {
             var suffixText = suffix == 0 ? string.Empty : $"-{suffix}";
-            var path = Path.Combine(_directory, $"{baseName}{suffixText}.jsonl");
+            var path = Path.Combine(this.directory, $"{baseName}{suffixText}.jsonl");
             try
             {
                 var stream = new FileStream(
@@ -196,7 +196,7 @@ internal sealed class P2pSessionLog : IDisposable
                     bufferSize: 4096,
                     FileOptions.SequentialScan);
                 writer = new StreamWriter(stream, Utf8WithoutBom) { AutoFlush = true };
-                _writers.Add(key, writer);
+                this.writers.Add(key, writer);
                 return writer;
             }
             catch (IOException) when (File.Exists(path))

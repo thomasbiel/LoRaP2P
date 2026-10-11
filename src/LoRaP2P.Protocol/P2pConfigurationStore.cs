@@ -5,28 +5,25 @@ namespace LoRaP2P.Protocol;
 
 public sealed class P2pConfigurationStore
 {
-    private static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        WriteIndented = true
-    };
+    private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
 
-    private readonly string _path;
+    private readonly string path;
 
     public P2pConfigurationStore(string path)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
-        _path = Path.GetFullPath(path);
+        this.path = Path.GetFullPath(path);
     }
 
     public async Task<P2pConfiguration?> LoadAsync(CancellationToken cancellationToken = default)
     {
-        if (!File.Exists(_path))
+        if (!File.Exists(this.path))
         {
             return null;
         }
 
         await using var stream = new FileStream(
-            _path,
+            this.path,
             FileMode.Open,
             FileAccess.Read,
             FileShare.Read,
@@ -41,12 +38,12 @@ public sealed class P2pConfigurationStore
         }
         catch (JsonException exception)
         {
-            throw new InvalidDataException($"P2P configuration '{_path}' contains invalid JSON.", exception);
+            throw new InvalidDataException($"P2P configuration '{this.path}' contains invalid JSON.", exception);
         }
 
         if (dto is null)
         {
-            throw new InvalidDataException($"P2P configuration '{_path}' is empty.");
+            throw new InvalidDataException($"P2P configuration '{this.path}' is empty.");
         }
 
         try
@@ -57,7 +54,7 @@ public sealed class P2pConfigurationStore
         }
         catch (ArgumentException exception)
         {
-            throw new InvalidDataException($"P2P configuration '{_path}' is invalid: {exception.Message}", exception);
+            throw new InvalidDataException($"P2P configuration '{this.path}' is invalid: {exception.Message}", exception);
         }
     }
 
@@ -66,9 +63,9 @@ public sealed class P2pConfigurationStore
         ArgumentNullException.ThrowIfNull(configuration);
         configuration.Validate();
 
-        var directory = Path.GetDirectoryName(_path)!;
+        var directory = Path.GetDirectoryName(this.path)!;
         Directory.CreateDirectory(directory);
-        var temporaryPath = Path.Combine(directory, $".{Path.GetFileName(_path)}.{Guid.NewGuid():N}.tmp");
+        var temporaryPath = Path.Combine(directory, $".{Path.GetFileName(this.path)}.{Guid.NewGuid():N}.tmp");
 
         try
         {
@@ -89,7 +86,7 @@ public sealed class P2pConfigurationStore
                 await stream.FlushAsync(cancellationToken).ConfigureAwait(false);
             }
 
-            File.Move(temporaryPath, _path, overwrite: true);
+            File.Move(temporaryPath, this.path, overwrite: true);
         }
         finally
         {
@@ -123,19 +120,17 @@ public sealed class P2pConfigurationStore
         public P2pConfiguration ToConfiguration() =>
             new()
             {
-                LocalNodeId = new P2pNodeId(LocalNodeId),
-                Peers = (Peers ?? throw new ArgumentException("Peers cannot be null."))
-                    .Select(static value => new P2pNodeId(value))
-                    .ToArray(),
+                LocalNodeId = new P2pNodeId(this.LocalNodeId),
+                Peers = [.. (this.Peers ?? throw new ArgumentException("Peers cannot be null.")).Select(static value => new P2pNodeId(value))],
                 Options = new P2pOptions
                 {
-                    AckTimeout = AckTimeout,
-                    MaxRetries = MaxRetries,
-                    BackoffMinimum = BackoffMinimum,
-                    BackoffMaximum = BackoffMaximum,
-                    AckTurnaroundDelay = AckTurnaroundDelay,
-                    DuplicateWindow = DuplicateWindow,
-                    DuplicateEntriesPerPeer = DuplicateEntriesPerPeer
+                    AckTimeout = this.AckTimeout,
+                    MaxRetries = this.MaxRetries,
+                    BackoffMinimum = this.BackoffMinimum,
+                    BackoffMaximum = this.BackoffMaximum,
+                    AckTurnaroundDelay = this.AckTurnaroundDelay,
+                    DuplicateWindow = this.DuplicateWindow,
+                    DuplicateEntriesPerPeer = this.DuplicateEntriesPerPeer
                 }
             };
 
@@ -143,7 +138,7 @@ public sealed class P2pConfigurationStore
             new()
             {
                 LocalNodeId = configuration.LocalNodeId.Value,
-                Peers = configuration.Peers.Select(static peer => peer.Value).ToArray(),
+                Peers = [.. configuration.Peers.Select(static peer => peer.Value)],
                 AckTimeout = configuration.Options.AckTimeout,
                 MaxRetries = configuration.Options.MaxRetries,
                 BackoffMinimum = configuration.Options.BackoffMinimum,

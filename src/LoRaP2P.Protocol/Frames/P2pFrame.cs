@@ -8,7 +8,7 @@ public sealed class P2pFrame
     public const int HeaderLength = 12;
     public const int MaximumPayloadLength = 243;
 
-    private readonly byte[] _payload;
+    private readonly byte[] payload;
 
     public P2pFrame(
         P2pMessageType type,
@@ -18,11 +18,11 @@ public sealed class P2pFrame
         ReadOnlySpan<byte> payload)
     {
         Validate(type, recipient, payload);
-        Type = type;
-        Sender = sender;
-        Recipient = recipient;
-        SequenceNumber = sequenceNumber;
-        _payload = payload.ToArray();
+        this.Type = type;
+        this.Sender = sender;
+        this.Recipient = recipient;
+        this.SequenceNumber = sequenceNumber;
+        this.payload = payload.ToArray();
     }
 
     public P2pMessageType Type { get; }
@@ -33,11 +33,11 @@ public sealed class P2pFrame
 
     public uint SequenceNumber { get; }
 
-    public int PayloadLength => _payload.Length;
+    public int PayloadLength => this.payload.Length;
 
-    public byte[] GetPayload() => (byte[])_payload.Clone();
+    public byte[] GetPayload() => (byte[])this.payload.Clone();
 
-    internal ReadOnlySpan<byte> PayloadSpan => _payload;
+    internal ReadOnlySpan<byte> PayloadSpan => this.payload;
 
     public static P2pFrame CreateData(
         P2pNodeId sender,

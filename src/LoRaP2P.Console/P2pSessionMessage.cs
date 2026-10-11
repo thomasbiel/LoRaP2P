@@ -28,57 +28,57 @@ internal sealed record P2pSessionMessage
 
     public void Validate()
     {
-        if (Timestamp == default)
+        if (this.Timestamp == default)
         {
             throw new InvalidDataException("Session message timestamp is missing.");
         }
 
-        if (Direction is not ("incoming" or "outgoing" or "broadcast"))
+        if (this.Direction is not ("incoming" or "outgoing" or "broadcast"))
         {
-            throw new InvalidDataException($"Unknown session message direction '{Direction}'.");
+            throw new InvalidDataException($"Unknown session message direction '{this.Direction}'.");
         }
 
-        if (LocalNodeId is 0 or ushort.MaxValue)
+        if (this.LocalNodeId is 0 or ushort.MaxValue)
         {
-            throw new InvalidDataException($"Invalid local node ID {LocalNodeId}.");
+            throw new InvalidDataException($"Invalid local node ID {this.LocalNodeId}.");
         }
 
-        var isBroadcastPeer = PeerNodeId == ushort.MaxValue;
-        if (PeerNodeId == 0 || (Direction == "broadcast") != isBroadcastPeer)
+        var isBroadcastPeer = this.PeerNodeId == ushort.MaxValue;
+        if (this.PeerNodeId == 0 || (this.Direction == "broadcast") != isBroadcastPeer)
         {
-            throw new InvalidDataException($"Invalid peer node ID {PeerNodeId}.");
+            throw new InvalidDataException($"Invalid peer node ID {this.PeerNodeId}.");
         }
 
-        if (PayloadType is not ("text" or "hex"))
+        if (this.PayloadType is not ("text" or "hex"))
         {
-            throw new InvalidDataException($"Unknown payload type '{PayloadType}'.");
+            throw new InvalidDataException($"Unknown payload type '{this.PayloadType}'.");
         }
 
-        if (PayloadType == "text" && Text is null)
+        if (this.PayloadType == "text" && this.Text is null)
         {
             throw new InvalidDataException("A text session message requires text.");
         }
 
-        if (string.IsNullOrWhiteSpace(Hex) || Hex.Length % 2 != 0)
+        if (string.IsNullOrWhiteSpace(this.Hex) || this.Hex.Length % 2 != 0)
         {
             throw new InvalidDataException("Session message hex payload is invalid.");
         }
 
         try
         {
-            _ = Convert.FromHexString(Hex);
+            _ = Convert.FromHexString(this.Hex);
         }
         catch (FormatException exception)
         {
             throw new InvalidDataException("Session message hex payload is invalid.", exception);
         }
 
-        if (Status is not ("received" or "acknowledged" or "failed" or "sent"))
+        if (this.Status is not ("received" or "acknowledged" or "failed" or "sent"))
         {
-            throw new InvalidDataException($"Unknown session message status '{Status}'.");
+            throw new InvalidDataException($"Unknown session message status '{this.Status}'.");
         }
 
-        if (Attempts is <= 0)
+        if (this.Attempts is <= 0)
         {
             throw new InvalidDataException("Session message attempts must be positive.");
         }

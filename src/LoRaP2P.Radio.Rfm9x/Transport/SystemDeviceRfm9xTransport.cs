@@ -7,14 +7,14 @@ public sealed class SystemDeviceRfm9xTransport : IRfm9xRegisterTransport
 {
     private const byte ReadMask = 0x7F;
     private const byte WriteMask = 0x80;
-    private readonly Lock _spiLock = new();
-    private readonly SpiDevice _spiDevice;
-    private readonly GpioController _gpioController;
-    private readonly int _resetPin;
-    private readonly int _dio0Pin;
-    private readonly bool _dio0EventsEnabled;
-    private readonly SemaphoreSlim _dio0Signal = new(0, 1);
-    private bool _disposed;
+    private readonly Lock spiLock = new();
+    private readonly SpiDevice spiDevice;
+    private readonly GpioController gpioController;
+    private readonly int resetPin;
+    private readonly int dio0Pin;
+    private readonly bool dio0EventsEnabled;
+    private readonly SemaphoreSlim dio0Signal = new(0, 1);
+    private bool disposed;
 
     public SystemDeviceRfm9xTransport(
         RadioConfiguration configuration,
@@ -30,29 +30,29 @@ public sealed class SystemDeviceRfm9xTransport : IRfm9xRegisterTransport
             Mode = SpiMode.Mode0
         };
 
-        _spiDevice = SpiDevice.Create(connectionSettings);
-        _gpioController = new GpioController();
-        _resetPin = configuration.ResetPin;
-        _dio0Pin = configuration.Dio0Pin;
-        _dio0EventsEnabled = enableDio0Events;
+        this.spiDevice = SpiDevice.Create(connectionSettings);
+        this.gpioController = new GpioController();
+        this.resetPin = configuration.ResetPin;
+        this.dio0Pin = configuration.Dio0Pin;
+        this.dio0EventsEnabled = enableDio0Events;
 
         try
         {
-            _gpioController.OpenPin(_resetPin, PinMode.Output);
-            _gpioController.Write(_resetPin, PinValue.High);
-            if (_dio0EventsEnabled)
+            this.gpioController.OpenPin(this.resetPin, PinMode.Output);
+            this.gpioController.Write(this.resetPin, PinValue.High);
+            if (this.dio0EventsEnabled)
             {
-                _gpioController.OpenPin(_dio0Pin, PinMode.Input);
-                _gpioController.RegisterCallbackForPinValueChangedEvent(
-                    _dio0Pin,
+                this.gpioController.OpenPin(this.dio0Pin, PinMode.Input);
+                this.gpioController.RegisterCallbackForPinValueChangedEvent(
+                    this.dio0Pin,
                     PinEventTypes.Rising,
-                    HandleDio0RisingEdge);
+                    this.HandleDio0RisingEdge);
             }
         }
         catch
         {
-            _gpioController.Dispose();
-            _spiDevice.Dispose();
+            this.gpioController.Dispose();
+            this.spiDevice.Dispose();
             throw;
         }
     }
@@ -60,22 +60,22 @@ public sealed class SystemDeviceRfm9xTransport : IRfm9xRegisterTransport
     public byte ReadByte(byte address)
     {
         Span<byte> value = stackalloc byte[1];
-        Read(address, value);
+        this.Read(address, value);
         return value[0];
     }
 
     public void Read(byte address, Span<byte> destination)
     {
-        ObjectDisposedException.ThrowIf(_disposed, this);
+        ObjectDisposedException.ThrowIf(this.disposed, this);
         ValidateAddress(address);
 
         var writeBuffer = new byte[destination.Length + 1];
         var readBuffer = new byte[destination.Length + 1];
         writeBuffer[0] = (byte)(address & ReadMask);
 
-        lock (_spiLock)
+        lock (this.spiLock)
         {
-            _spiDevice.TransferFullDuplex(writeBuffer, readBuffer);
+            this.spiDevice.TransferFullDuplex(writeBuffer, readBuffer);
         }
 
         readBuffer.AsSpan(1).CopyTo(destination);
@@ -85,65 +85,65 @@ public sealed class SystemDeviceRfm9xTransport : IRfm9xRegisterTransport
     {
         Span<byte> source = stackalloc byte[1];
         source[0] = value;
-        Write(address, source);
+        this.Write(address, source);
     }
 
     public void Write(byte address, ReadOnlySpan<byte> source)
     {
-        ObjectDisposedException.ThrowIf(_disposed, this);
+        ObjectDisposedException.ThrowIf(this.disposed, this);
         ValidateAddress(address);
 
         var writeBuffer = new byte[source.Length + 1];
         writeBuffer[0] = (byte)(address | WriteMask);
         source.CopyTo(writeBuffer.AsSpan(1));
 
-        lock (_spiLock)
+        lock (this.spiLock)
         {
-            _spiDevice.Write(writeBuffer);
+            this.spiDevice.Write(writeBuffer);
         }
     }
 
     public void SetReset(bool asserted)
     {
-        ObjectDisposedException.ThrowIf(_disposed, this);
-        _gpioController.Write(_resetPin, asserted ? PinValue.Low : PinValue.High);
+        ObjectDisposedException.ThrowIf(this.disposed, this);
+        this.gpioController.Write(this.resetPin, asserted ? PinValue.Low : PinValue.High);
     }
 
     public void ClearDio0Signal()
     {
-        ObjectDisposedException.ThrowIf(_disposed, this);
-        while (_dio0Signal.Wait(0))
+        ObjectDisposedException.ThrowIf(this.disposed, this);
+        while (this.dio0Signal.Wait(0))
         {
         }
     }
 
     public ValueTask WaitForDio0RisingEdgeAsync(CancellationToken cancellationToken)
     {
-        ObjectDisposedException.ThrowIf(_disposed, this);
-        if (!_dio0EventsEnabled)
+        ObjectDisposedException.ThrowIf(this.disposed, this);
+        if (!this.dio0EventsEnabled)
         {
             throw new InvalidOperationException("DIO0 event monitoring is disabled.");
         }
 
-        return new ValueTask(_dio0Signal.WaitAsync(cancellationToken));
+        return new ValueTask(this.dio0Signal.WaitAsync(cancellationToken));
     }
 
     public void Dispose()
     {
-        if (_disposed)
+        if (this.disposed)
         {
             return;
         }
 
-        _disposed = true;
-        if (_dio0EventsEnabled)
+        this.disposed = true;
+        if (this.dio0EventsEnabled)
         {
-            _gpioController.UnregisterCallbackForPinValueChangedEvent(_dio0Pin, HandleDio0RisingEdge);
+            this.gpioController.UnregisterCallbackForPinValueChangedEvent(this.dio0Pin, this.HandleDio0RisingEdge);
         }
 
-        _gpioController.Dispose();
-        _spiDevice.Dispose();
-        _dio0Signal.Dispose();
+        this.gpioController.Dispose();
+        this.spiDevice.Dispose();
+        this.dio0Signal.Dispose();
     }
 
     private static void ValidateAddress(byte address)
@@ -156,16 +156,16 @@ public sealed class SystemDeviceRfm9xTransport : IRfm9xRegisterTransport
 
     private void HandleDio0RisingEdge(object sender, PinValueChangedEventArgs eventArgs)
     {
-        if (_disposed || eventArgs.ChangeType != PinEventTypes.Rising)
+        if (this.disposed || eventArgs.ChangeType != PinEventTypes.Rising)
         {
             return;
         }
 
         try
         {
-            if (_dio0Signal.CurrentCount == 0)
+            if (this.dio0Signal.CurrentCount == 0)
             {
-                _dio0Signal.Release();
+                this.dio0Signal.Release();
             }
         }
         catch (ObjectDisposedException)

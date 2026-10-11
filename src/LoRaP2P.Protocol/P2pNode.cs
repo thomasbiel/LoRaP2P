@@ -8,17 +8,17 @@ namespace LoRaP2P.Protocol;
 
 public sealed class P2pNode : IDisposable
 {
-    private readonly ILoraRadio _radio;
-    private readonly P2pNodeId _localNodeId;
-    private readonly P2pOptions _options;
-    private readonly PeerRegistry _peers;
-    private readonly P2pStatistics _statistics;
-    private readonly SequenceNumberGenerator _sequences;
-    private readonly DuplicateTracker _duplicates;
-    private readonly TimeProvider _timeProvider;
-    private readonly IP2pRandom _random;
-    private readonly IP2pDelay _delay;
-    private readonly SemaphoreSlim _transactionLock = new(1, 1);
+    private readonly ILoraRadio radio;
+    private readonly P2pNodeId localNodeId;
+    private readonly P2pOptions options;
+    private readonly PeerRegistry peers;
+    private readonly P2pStatistics statistics;
+    private readonly SequenceNumberGenerator sequences;
+    private readonly DuplicateTracker duplicates;
+    private readonly TimeProvider timeProvider;
+    private readonly IP2pRandom random;
+    private readonly IP2pDelay delay;
+    private readonly SemaphoreSlim transactionLock = new(1, 1);
 
     public P2pNode(
         ILoraRadio radio,
@@ -32,40 +32,40 @@ public sealed class P2pNode : IDisposable
         IP2pDelay? delay = null)
     {
         ArgumentNullException.ThrowIfNull(radio);
-        _radio = radio;
-        _localNodeId = localNodeId;
-        _options = options ?? new P2pOptions();
-        _options.Validate();
-        _peers = peers ?? new PeerRegistry();
-        _statistics = statistics ?? new P2pStatistics();
-        _timeProvider = timeProvider ?? TimeProvider.System;
-        _random = random ?? new SystemP2pRandom();
-        _sequences = sequences ?? new SequenceNumberGenerator(_random);
-        _duplicates = new DuplicateTracker(_options.DuplicateWindow, _options.DuplicateEntriesPerPeer);
-        _delay = delay ?? new TimeProviderP2pDelay(_timeProvider);
+        this.radio = radio;
+        this.localNodeId = localNodeId;
+        this.options = options ?? new P2pOptions();
+        this.options.Validate();
+        this.peers = peers ?? new PeerRegistry();
+        this.statistics = statistics ?? new P2pStatistics();
+        this.timeProvider = timeProvider ?? TimeProvider.System;
+        this.random = random ?? new SystemP2pRandom();
+        this.sequences = sequences ?? new SequenceNumberGenerator(this.random);
+        this.duplicates = new DuplicateTracker(this.options.DuplicateWindow, this.options.DuplicateEntriesPerPeer);
+        this.delay = delay ?? new TimeProviderP2pDelay(this.timeProvider);
     }
 
     public event Action<P2pReceivedMessage>? DataReceived;
 
-    public P2pNodeId LocalNodeId => _localNodeId;
+    public P2pNodeId LocalNodeId => this.localNodeId;
 
-    public PeerRegistry Peers => _peers;
+    public PeerRegistry Peers => this.peers;
 
-    public P2pStatistics Statistics => _statistics;
+    public P2pStatistics Statistics => this.statistics;
 
-    public void Dispose() => _transactionLock.Dispose();
+    public void Dispose() => this.transactionLock.Dispose();
 
     public async Task<P2pSendResult> SendAsync(
         P2pNodeId peer,
         ReadOnlyMemory<byte> payload,
         CancellationToken cancellationToken = default)
     {
-        var sequenceNumber = _sequences.Next();
-        var frame = P2pFrame.CreateData(_localNodeId, new P2pAddress(peer), sequenceNumber, payload.Span);
+        var sequenceNumber = this.sequences.Next();
+        var frame = P2pFrame.CreateData(this.localNodeId, new P2pAddress(peer), sequenceNumber, payload.Span);
         var encoded = P2pFrameCodec.Encode(frame);
-        var attempts = _options.MaxRetries + 1;
+        var attempts = this.options.MaxRetries + 1;
 
-        await _transactionLock.WaitAsync(cancellationToken).ConfigureAwait(false);
+        await this.transactionLock.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
             for (var attempt = 1; attempt <= attempts; attempt++)
@@ -73,36 +73,36 @@ public sealed class P2pNode : IDisposable
                 cancellationToken.ThrowIfCancellationRequested();
                 if (attempt > 1)
                 {
-                    _statistics.Retry();
+                    this.statistics.Retry();
                 }
 
-                var transmitResult = await _radio.TransmitAsync(encoded, cancellationToken).ConfigureAwait(false);
-                _statistics.DataFrameSent();
-                var ackWaitStarted = _timeProvider.GetUtcNow();
+                var transmitResult = await this.radio.TransmitAsync(encoded, cancellationToken).ConfigureAwait(false);
+                this.statistics.DataFrameSent();
+                var ackWaitStarted = this.timeProvider.GetUtcNow();
 
-                if (await WaitForAckAsync(peer, sequenceNumber, ackWaitStarted, cancellationToken).ConfigureAwait(false))
+                if (await this.WaitForAckAsync(peer, sequenceNumber, ackWaitStarted, cancellationToken).ConfigureAwait(false))
                 {
                     return new P2pSendResult(
                         peer,
                         sequenceNumber,
                         attempt,
                         transmitResult.TimeOnAir,
-                        _timeProvider.GetUtcNow() - ackWaitStarted);
+                        this.timeProvider.GetUtcNow() - ackWaitStarted);
                 }
 
-                _statistics.AckTimeout();
+                this.statistics.AckTimeout();
                 if (attempt < attempts)
                 {
-                    await _delay.DelayAsync(GetBackoff(), cancellationToken).ConfigureAwait(false);
+                    await this.delay.DelayAsync(this.GetBackoff(), cancellationToken).ConfigureAwait(false);
                 }
             }
         }
         finally
         {
-            _transactionLock.Release();
+            this.transactionLock.Release();
         }
 
-        _statistics.DeliveryFailure();
+        this.statistics.DeliveryFailure();
         throw new P2pDeliveryException(peer, sequenceNumber, attempts);
     }
 
@@ -110,20 +110,20 @@ public sealed class P2pNode : IDisposable
         ReadOnlyMemory<byte> payload,
         CancellationToken cancellationToken = default)
     {
-        var sequenceNumber = _sequences.Next();
-        var frame = P2pFrame.CreateData(_localNodeId, P2pAddress.Broadcast, sequenceNumber, payload.Span);
+        var sequenceNumber = this.sequences.Next();
+        var frame = P2pFrame.CreateData(this.localNodeId, P2pAddress.Broadcast, sequenceNumber, payload.Span);
         var encoded = P2pFrameCodec.Encode(frame);
 
-        await _transactionLock.WaitAsync(cancellationToken).ConfigureAwait(false);
+        await this.transactionLock.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            var result = await _radio.TransmitAsync(encoded, cancellationToken).ConfigureAwait(false);
-            _statistics.DataFrameSent();
+            var result = await this.radio.TransmitAsync(encoded, cancellationToken).ConfigureAwait(false);
+            this.statistics.DataFrameSent();
             return new P2pBroadcastResult(sequenceNumber, result.TimeOnAir, result.CompletedAt);
         }
         finally
         {
-            _transactionLock.Release();
+            this.transactionLock.Release();
         }
     }
 
@@ -132,20 +132,20 @@ public sealed class P2pNode : IDisposable
         while (true)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            await _transactionLock.WaitAsync(cancellationToken).ConfigureAwait(false);
+            await this.transactionLock.WaitAsync(cancellationToken).ConfigureAwait(false);
             try
             {
-                var packet = await _radio
-                    .ReceiveSingleAsync(_options.ListenPollTimeout, cancellationToken)
+                var packet = await this.radio
+                    .ReceiveSingleAsync(this.options.ListenPollTimeout, cancellationToken)
                     .ConfigureAwait(false);
                 if (packet is not null)
                 {
-                    await ProcessPacketAsync(packet, cancellationToken).ConfigureAwait(false);
+                    await this.ProcessPacketAsync(packet, cancellationToken).ConfigureAwait(false);
                 }
             }
             finally
             {
-                _transactionLock.Release();
+                this.transactionLock.Release();
             }
         }
     }
@@ -156,22 +156,22 @@ public sealed class P2pNode : IDisposable
         DateTimeOffset startedAt,
         CancellationToken cancellationToken)
     {
-        var deadline = startedAt + _options.AckTimeout;
+        var deadline = startedAt + this.options.AckTimeout;
         while (true)
         {
-            var remaining = deadline - _timeProvider.GetUtcNow();
+            var remaining = deadline - this.timeProvider.GetUtcNow();
             if (remaining <= TimeSpan.Zero)
             {
                 return false;
             }
 
-            var packet = await _radio.ReceiveSingleAsync(remaining, cancellationToken).ConfigureAwait(false);
+            var packet = await this.radio.ReceiveSingleAsync(remaining, cancellationToken).ConfigureAwait(false);
             if (packet is null)
             {
                 return false;
             }
 
-            var frame = await ProcessPacketAsync(packet, cancellationToken).ConfigureAwait(false);
+            var frame = await this.ProcessPacketAsync(packet, cancellationToken).ConfigureAwait(false);
             if (frame is
                 {
                     Type: P2pMessageType.Ack,
@@ -190,7 +190,7 @@ public sealed class P2pNode : IDisposable
     {
         if (!packet.IsCrcValid)
         {
-            _statistics.CrcError();
+            this.statistics.CrcError();
             return null;
         }
 
@@ -201,19 +201,19 @@ public sealed class P2pNode : IDisposable
         }
         catch (P2pProtocolException)
         {
-            _statistics.InvalidFrameDropped();
+            this.statistics.InvalidFrameDropped();
             return null;
         }
 
-        if ((frame.Recipient.Value != _localNodeId.Value && !frame.Recipient.IsBroadcast) ||
-            frame.Sender == _localNodeId)
+        if ((frame.Recipient.Value != this.localNodeId.Value && !frame.Recipient.IsBroadcast) ||
+            frame.Sender == this.localNodeId)
         {
-            _statistics.ForeignFrameDropped();
+            this.statistics.ForeignFrameDropped();
             return null;
         }
 
-        var receivedAt = _timeProvider.GetUtcNow();
-        _peers.RecordReception(
+        var receivedAt = this.timeProvider.GetUtcNow();
+        this.peers.RecordReception(
             frame.Sender,
             receivedAt,
             packet.PacketRssiDbm,
@@ -223,10 +223,10 @@ public sealed class P2pNode : IDisposable
         switch (frame.Type)
         {
             case P2pMessageType.Data:
-                await ProcessDataAsync(frame, packet, receivedAt, cancellationToken).ConfigureAwait(false);
+                await this.ProcessDataAsync(frame, packet, receivedAt, cancellationToken).ConfigureAwait(false);
                 break;
             case P2pMessageType.Ack:
-                _statistics.AckReceived();
+                this.statistics.AckReceived();
                 break;
             case P2pMessageType.Error:
                 break;
@@ -241,11 +241,11 @@ public sealed class P2pNode : IDisposable
         DateTimeOffset receivedAt,
         CancellationToken cancellationToken)
     {
-        _statistics.DataFrameReceived();
-        var isDuplicate = _duplicates.IsDuplicateAndTrack(frame.Sender, frame.SequenceNumber, receivedAt);
+        this.statistics.DataFrameReceived();
+        var isDuplicate = this.duplicates.IsDuplicateAndTrack(frame.Sender, frame.SequenceNumber, receivedAt);
         if (isDuplicate)
         {
-            _statistics.Duplicate();
+            this.statistics.Duplicate();
         }
         else
         {
@@ -263,22 +263,22 @@ public sealed class P2pNode : IDisposable
 
         if (!frame.Recipient.IsBroadcast)
         {
-            await _delay.DelayAsync(_options.AckTurnaroundDelay, cancellationToken).ConfigureAwait(false);
-            var ack = P2pFrame.CreateAck(_localNodeId, frame.Sender, frame.SequenceNumber);
-            await _radio.TransmitAsync(P2pFrameCodec.Encode(ack), cancellationToken).ConfigureAwait(false);
-            _statistics.AckSent();
+            await this.delay.DelayAsync(this.options.AckTurnaroundDelay, cancellationToken).ConfigureAwait(false);
+            var ack = P2pFrame.CreateAck(this.localNodeId, frame.Sender, frame.SequenceNumber);
+            await this.radio.TransmitAsync(P2pFrameCodec.Encode(ack), cancellationToken).ConfigureAwait(false);
+            this.statistics.AckSent();
         }
     }
 
     private TimeSpan GetBackoff()
     {
-        if (_options.BackoffMinimum == _options.BackoffMaximum)
+        if (this.options.BackoffMinimum == this.options.BackoffMaximum)
         {
-            return _options.BackoffMinimum;
+            return this.options.BackoffMinimum;
         }
 
-        var rangeTicks = _options.BackoffMaximum.Ticks - _options.BackoffMinimum.Ticks;
-        var fraction = _random.NextInt32(0, int.MaxValue) / (double)(int.MaxValue - 1);
-        return _options.BackoffMinimum + TimeSpan.FromTicks((long)(rangeTicks * fraction));
+        var rangeTicks = this.options.BackoffMaximum.Ticks - this.options.BackoffMinimum.Ticks;
+        var fraction = this.random.NextInt32(0, int.MaxValue) / (double)(int.MaxValue - 1);
+        return this.options.BackoffMinimum + TimeSpan.FromTicks((long)(rangeTicks * fraction));
     }
 }

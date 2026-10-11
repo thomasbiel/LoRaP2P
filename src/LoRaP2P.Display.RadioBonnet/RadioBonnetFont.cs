@@ -1,4 +1,4 @@
-namespace LoRaP2P.Console;
+namespace LoRaP2P.Display.RadioBonnet;
 
 internal static class RadioBonnetFont
 {

@@ -27,7 +27,7 @@ internal sealed class RadioHardwareCheckTests
         TestRadioBonnetCheckUi bonnet = new(cancellation);
         await using StringWriter output = new();
 
-        Assert.CatchAsync<OperationCanceledException>(
+        await Assert.CatchAsync<OperationCanceledException>(
             async () => await RadioHardwareCheck.RunAsync(
                 radio,
                 configuration,
@@ -56,7 +56,7 @@ internal sealed class RadioHardwareCheckTests
 
         public void ShowRadioStatus(bool detected)
         {
-            RadioDetected = detected;
+            this.RadioDetected = detected;
         }
 
         public RadioBonnetButtons ReadButtons()
@@ -67,7 +67,7 @@ internal sealed class RadioHardwareCheckTests
 
         public void ShowButtons(RadioBonnetButtons buttons)
         {
-            DisplayedButtons = buttons;
+            this.DisplayedButtons = buttons;
         }
     }
 }

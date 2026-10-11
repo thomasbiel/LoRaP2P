@@ -1,3 +1,5 @@
+using LoRaP2P.Display.RadioBonnet;
+
 namespace LoRaP2P.Console.Tests;
 
 [TestFixture]

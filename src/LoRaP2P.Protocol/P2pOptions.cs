@@ -20,27 +20,27 @@ public sealed record P2pOptions
 
     public void Validate()
     {
-        ValidatePositive(AckTimeout, nameof(AckTimeout));
-        ValidatePositive(BackoffMinimum, nameof(BackoffMinimum));
-        ValidatePositive(BackoffMaximum, nameof(BackoffMaximum));
-        ValidatePositive(AckTurnaroundDelay, nameof(AckTurnaroundDelay));
-        ValidatePositive(DuplicateWindow, nameof(DuplicateWindow));
-        ValidatePositive(ListenPollTimeout, nameof(ListenPollTimeout));
+        ValidatePositive(this.AckTimeout, nameof(this.AckTimeout));
+        ValidatePositive(this.BackoffMinimum, nameof(this.BackoffMinimum));
+        ValidatePositive(this.BackoffMaximum, nameof(this.BackoffMaximum));
+        ValidatePositive(this.AckTurnaroundDelay, nameof(this.AckTurnaroundDelay));
+        ValidatePositive(this.DuplicateWindow, nameof(this.DuplicateWindow));
+        ValidatePositive(this.ListenPollTimeout, nameof(this.ListenPollTimeout));
 
-        if (BackoffMinimum > BackoffMaximum)
+        if (this.BackoffMinimum > this.BackoffMaximum)
         {
             throw new ArgumentException("BackoffMinimum cannot exceed BackoffMaximum.");
         }
 
-        if (MaxRetries is < 0 or > 10)
+        if (this.MaxRetries is < 0 or > 10)
         {
-            throw new ArgumentOutOfRangeException(nameof(MaxRetries), "MaxRetries must be between 0 and 10.");
+            throw new ArgumentOutOfRangeException(nameof(this.MaxRetries), "MaxRetries must be between 0 and 10.");
         }
 
-        if (DuplicateEntriesPerPeer is < 1 or > 1024)
+        if (this.DuplicateEntriesPerPeer is < 1 or > 1024)
         {
             throw new ArgumentOutOfRangeException(
-                nameof(DuplicateEntriesPerPeer),
+                nameof(this.DuplicateEntriesPerPeer),
                 "DuplicateEntriesPerPeer must be between 1 and 1024.");
         }
     }

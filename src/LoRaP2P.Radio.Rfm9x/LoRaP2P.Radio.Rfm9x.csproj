@@ -1,5 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
-    <PackageReference Include="System.Device.Gpio" Version="4.2.0" />
+    <PackageReference Include="System.Device.Gpio" />
   </ItemGroup>
 </Project>

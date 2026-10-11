@@ -4,7 +4,7 @@ namespace LoRaP2P.Protocol.Tests;
 
 internal sealed class ScriptedLoraRadio : ILoraRadio
 {
-    private readonly Queue<Func<TimeSpan, CancellationToken, Task<ReceivedPacket?>>> _receptions = [];
+    private readonly Queue<Func<TimeSpan, CancellationToken, Task<ReceivedPacket?>>> receptions = [];
 
     public List<byte[]> Transmissions { get; } = [];
 
@@ -13,7 +13,7 @@ internal sealed class ScriptedLoraRadio : ILoraRadio
     public Func<ReadOnlyMemory<byte>, CancellationToken, Task<TransmitResult>>? TransmitHandler { get; set; }
 
     public void EnqueuePacket(ReceivedPacket packet, Action? after = null) =>
-        _receptions.Enqueue(
+        this.receptions.Enqueue(
             (_, _) =>
             {
                 after?.Invoke();
@@ -21,7 +21,7 @@ internal sealed class ScriptedLoraRadio : ILoraRadio
             });
 
     public void EnqueueTimeout(Action? after = null) =>
-        _receptions.Enqueue(
+        this.receptions.Enqueue(
             (_, _) =>
             {
                 after?.Invoke();
@@ -32,8 +32,8 @@ internal sealed class ScriptedLoraRadio : ILoraRadio
         ReadOnlyMemory<byte> payload,
         CancellationToken cancellationToken = default)
     {
-        Transmissions.Add(payload.ToArray());
-        return TransmitHandler?.Invoke(payload, cancellationToken) ??
+        this.Transmissions.Add(payload.ToArray());
+        return this.TransmitHandler?.Invoke(payload, cancellationToken) ??
                Task.FromResult(new TransmitResult(TimeSpan.FromMilliseconds(12), DateTimeOffset.UnixEpoch));
     }
 
@@ -41,8 +41,8 @@ internal sealed class ScriptedLoraRadio : ILoraRadio
         TimeSpan timeout,
         CancellationToken cancellationToken = default)
     {
-        ReceiveTimeouts.Add(timeout);
-        if (_receptions.TryDequeue(out var reception))
+        this.ReceiveTimeouts.Add(timeout);
+        if (this.receptions.TryDequeue(out var reception))
         {
             return reception(timeout, cancellationToken);
         }
@@ -90,7 +90,7 @@ internal sealed class RecordingDelay : IP2pDelay
     public Task DelayAsync(TimeSpan delay, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        Delays.Add(delay);
+        this.Delays.Add(delay);
         return Task.CompletedTask;
     }
 }

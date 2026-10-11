@@ -12,21 +12,21 @@ public sealed record P2pConfiguration
 
     public void Validate()
     {
-        ArgumentNullException.ThrowIfNull(Peers);
-        ArgumentNullException.ThrowIfNull(Options);
-        Options.Validate();
+        ArgumentNullException.ThrowIfNull(this.Peers);
+        ArgumentNullException.ThrowIfNull(this.Options);
+        this.Options.Validate();
 
         var uniquePeers = new HashSet<P2pNodeId>();
-        foreach (var peer in Peers)
+        foreach (var peer in this.Peers)
         {
-            if (peer == LocalNodeId)
+            if (peer == this.LocalNodeId)
             {
-                throw new ArgumentException("The local node ID cannot also be a peer.", nameof(Peers));
+                throw new ArgumentException("The local node ID cannot also be a peer.", nameof(this.Peers));
             }
 
             if (!uniquePeers.Add(peer))
             {
-                throw new ArgumentException($"Peer {peer} occurs more than once.", nameof(Peers));
+                throw new ArgumentException($"Peer {peer} occurs more than once.", nameof(this.Peers));
             }
         }
     }

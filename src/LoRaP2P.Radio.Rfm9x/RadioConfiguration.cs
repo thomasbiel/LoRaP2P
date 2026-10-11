@@ -36,59 +36,59 @@ public sealed record RadioConfiguration
 
     public void Validate()
     {
-        if (SpiBusId < 0)
+        if (this.SpiBusId < 0)
         {
-            throw new ArgumentOutOfRangeException(nameof(SpiBusId));
+            throw new ArgumentOutOfRangeException(nameof(this.SpiBusId));
         }
 
-        if (ChipSelectLine < 0)
+        if (this.ChipSelectLine < 0)
         {
-            throw new ArgumentOutOfRangeException(nameof(ChipSelectLine));
+            throw new ArgumentOutOfRangeException(nameof(this.ChipSelectLine));
         }
 
-        if (ResetPin < 0 || Dio0Pin < 0 || ResetPin == Dio0Pin)
+        if (this.ResetPin < 0 || this.Dio0Pin < 0 || this.ResetPin == this.Dio0Pin)
         {
             throw new ArgumentException("ResetPin and Dio0Pin must be distinct non-negative BCM GPIO numbers.");
         }
 
-        if (FrequencyHertz is < 863_000_000 or > 870_000_000)
+        if (this.FrequencyHertz is < 863_000_000 or > 870_000_000)
         {
-            throw new ArgumentOutOfRangeException(nameof(FrequencyHertz), "EU868 frequency must be between 863 and 870 MHz.");
+            throw new ArgumentOutOfRangeException(nameof(this.FrequencyHertz), "EU868 frequency must be between 863 and 870 MHz.");
         }
 
-        if (!Enum.IsDefined(SpreadingFactor))
+        if (!Enum.IsDefined(this.SpreadingFactor))
         {
-            throw new ArgumentOutOfRangeException(nameof(SpreadingFactor));
+            throw new ArgumentOutOfRangeException(nameof(this.SpreadingFactor));
         }
 
-        if (!Enum.IsDefined(Bandwidth))
+        if (!Enum.IsDefined(this.Bandwidth))
         {
-            throw new ArgumentOutOfRangeException(nameof(Bandwidth));
+            throw new ArgumentOutOfRangeException(nameof(this.Bandwidth));
         }
 
-        if (!Enum.IsDefined(CodingRate))
+        if (!Enum.IsDefined(this.CodingRate))
         {
-            throw new ArgumentOutOfRangeException(nameof(CodingRate));
+            throw new ArgumentOutOfRangeException(nameof(this.CodingRate));
         }
 
-        if (OutputPowerDbm is < 2 or > 17)
+        if (this.OutputPowerDbm is < 2 or > 17)
         {
-            throw new ArgumentOutOfRangeException(nameof(OutputPowerDbm), "PoC output power is limited to 2 through 17 dBm for EU868.");
+            throw new ArgumentOutOfRangeException(nameof(this.OutputPowerDbm), "PoC output power is limited to 2 through 17 dBm for EU868.");
         }
 
-        if (PreambleSymbols < 6)
+        if (this.PreambleSymbols < 6)
         {
-            throw new ArgumentOutOfRangeException(nameof(PreambleSymbols));
+            throw new ArgumentOutOfRangeException(nameof(this.PreambleSymbols));
         }
 
-        if (DutyCycle is <= 0 or > 1)
+        if (this.DutyCycle is <= 0 or > 1)
         {
-            throw new ArgumentOutOfRangeException(nameof(DutyCycle));
+            throw new ArgumentOutOfRangeException(nameof(this.DutyCycle));
         }
 
-        if (OperationTimeout <= TimeSpan.Zero)
+        if (this.OperationTimeout <= TimeSpan.Zero)
         {
-            throw new ArgumentOutOfRangeException(nameof(OperationTimeout));
+            throw new ArgumentOutOfRangeException(nameof(this.OperationTimeout));
         }
     }
 }

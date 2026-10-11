@@ -48,6 +48,10 @@ dotnet test LoRaP2P.slnx --configuration Release
 
 Die Tests verwenden NUnit, einen Fake-Registertransport und ein Fake-Radio. Sie benötigen keine Funkhardware.
 
+NuGet-Versionen werden zentral in [Directory.Packages.props](Directory.Packages.props)
+verwaltet. Die Tests verwenden NUnit 5.0.0, NUnit3TestAdapter 6.3.1 und
+Microsoft.NET.Test.Sdk 18.10.1.
+
 ## Für Raspberry Pi OS 64-bit veröffentlichen
 
 ```powershell
@@ -157,11 +161,45 @@ wird.
 Wire-Format, Architektur, Betrieb und Tests sind unter
 [docs/p2p/README.md](docs/p2p/README.md) dokumentiert.
 
+## Sprache auf dem Bonnet-Display
+
+Das separate CLI-Tool `LoRaP2P.SpeechDisplay` nimmt ein ALSA-Mikrofon auf,
+erkennt Sprache offline mit Vosk und zeigt den Text zeilenweise nach oben
+scrollend auf dem Bonnet-OLED. Es verwendet weder SPI noch das Funkmodul.
+Ein externes Mikrofon, beispielsweise ein USB-Mikrofon, ist erforderlich.
+
+```powershell
+dotnet publish src/LoRaP2P.SpeechDisplay/LoRaP2P.SpeechDisplay.csproj `
+  --configuration Release `
+  --runtime linux-arm64 `
+  --self-contained true `
+  --output artifacts/speech-display/linux-arm64
+```
+
+Die native ARM64-Bibliothek `libvosk.so` wird automatisch mit veröffentlicht.
+Ohne `--model` lädt das Tool beim ersten Start das deutsche Standardmodell
+automatisch nach `~/LoRaP2P/models` und verwendet es danach aus dem Cache:
+
+```bash
+./LoRaP2P.SpeechDisplay \
+  --device plughw:1,0 \
+  --scroll-ms 1000
+```
+
+Die vollständige Einrichtung, Mikrofonprüfung und Fehlerdiagnose stehen in
+[docs/speech-display.md](docs/speech-display.md). `--model-url <https-url>`
+wählt ein anderes Modellarchiv; `--model <path>` verwendet ein lokales Modell
+ohne Download. Nur die erstmalige Modellbereitstellung benötigt Internet.
+Sprachmodell und Linux-Systembibliotheken sind nicht Teil der
+selbstenthaltenen .NET-Ausgabe.
+
 ## Projektstruktur
 
 ```text
 src/LoRaP2P.Console/Commands    CommandLineParser-Verben der interaktiven Konsole
 src/LoRaP2P.Console             Konfiguration und Anwendungskomposition
+src/LoRaP2P.Display.RadioBonnet  Gemeinsamer SSD1306-Treiber, Font und Textlayout
+src/LoRaP2P.SpeechDisplay        ALSA-Mikrofon, Vosk und scrollende OLED-Ausgabe
 src/LoRaP2P.Protocol            P2P-Frames, ACKs, Retries, Peers und Statistiken
 src/LoRaP2P.Radio.Rfm9x         Hardwaretransport und SX1276/RFM95-Treiber
 tests/LoRaP2P.Console.Tests     Hardwarefreie Tests der Kommandoverarbeitung

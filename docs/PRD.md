@@ -34,7 +34,8 @@ Bereitstellung eines testbaren .NET-10-RFM95-Treibers und einer interaktiven Kon
 - Keine ADR- oder MAC-Command-Verarbeitung
 - Keine persistenten Frame Counter oder Nonces
 - Kein LoRaWAN-Gateway und kein Network Server
-- Keine OLED- oder Tastersteuerung außerhalb des interaktiven Hardwarechecks
+- Keine Mikrofon- oder Spracherkennung im Funk-Client; das separate
+  `LoRaP2P.SpeechDisplay` verwendet nur Mikrofon und OLED.
 - Kein systemd-Dienst und keine unbeaufsichtigte Sensoranwendung
 - Keine Bestätigung des Funkempfangs mit nur einem Transceiver
 
@@ -150,12 +151,31 @@ Eine generische Register-Schreibfunktion ist absichtlich nicht Teil des normalen
 
 ## 8. Nichtfunktionale Anforderungen
 
+### Separates Sprach-CLI
+
+`src/LoRaP2P.SpeechDisplay` nimmt Sprache über ein externes ALSA-Mikrofon
+auf und erkennt sie lokal mit Vosk. Bestätigte Textabschnitte werden auf dem
+Bonnet-OLED mit Wortumbruch zeilenweise nach oben gescrollt. Neue Abschnitte
+werden angehängt. Das Tool greift weder auf SPI noch auf `ILoraRadio` zu.
+Ohne lokalen `--model`-Override wird das über `--model-url` gewählte Modell-ZIP
+automatisch in den Benutzerordner geladen und für spätere Offline-Starts
+zwischengespeichert. Standard ist `vosk-model-small-de-0.15` vom Vosk-Anbieter.
+
+`src/LoRaP2P.Display.RadioBonnet` kapselt die gemeinsame SSD1306-Ansteuerung,
+GPIO4-Reset, Font, Framebuffer und Textlayout. Funkkonsole und Sprach-CLI
+nutzen dieses Projekt; Taster und Broadcast-Scrollsteuerung bleiben in der
+Funkkonsole. Beide Programme dürfen nicht gleichzeitig dasselbe Display
+verwenden. Einrichtung und Hardwareprüfung stehen in
+[speech-display.md](speech-display.md).
+
 ### NFR-001: Testbarkeit
 
 - Radiozustandsmaschine MUSS ausschließlich von `IRfm9xRegisterTransport` abhängen.
 - Konsolenbefehle MÜSSEN ausschließlich über `ILoraRadio` testbar sein.
 - Unit-Tests MÜSSEN ohne GPIO, SPI oder Raspberry Pi ausführbar sein.
-- NUnit 4.4.0 und NUnit3TestAdapter 5.0.0 werden verwendet.
+- NUnit 5.0.0, NUnit3TestAdapter 6.3.1 und Microsoft.NET.Test.Sdk 18.10.1
+  werden verwendet. NuGet-Versionen werden zentral in `Directory.Packages.props`
+  verwaltet.
 
 ### NFR-002: Robustheit
 

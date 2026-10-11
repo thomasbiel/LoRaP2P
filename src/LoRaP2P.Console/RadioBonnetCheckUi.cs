@@ -1,6 +1,6 @@
 using System.Device.Gpio;
-using System.Device.I2c;
 using System.Runtime.ExceptionServices;
+using LoRaP2P.Display.RadioBonnet;
 
 namespace LoRaP2P.Console;
 
@@ -29,76 +29,63 @@ internal interface IRadioBonnetDisplay
 
 internal sealed class SystemRadioBonnetCheckUi : IRadioBonnetCheckUi, IRadioBonnetDisplay, IDisposable
 {
-    private const int DisplayResetPin = 4;
     private const int ButtonAPin = 5;
     private const int ButtonBPin = 6;
     private const int ButtonCPin = 12;
-    private const int DisplayWidth = 128;
-    private const int DisplayHeight = 32;
-    private const int I2cBusId = 1;
-    private const int DisplayAddress = 0x3C;
     private static readonly TimeSpan ScrollInterval = TimeSpan.FromSeconds(1);
 
-    private readonly GpioController _gpioController;
-    private readonly I2cDevice _display;
-    private readonly byte[] _frameBuffer = new byte[DisplayWidth * DisplayHeight / 8];
-    private readonly Lock _displayLock = new();
-    private readonly Lock _scrollLock = new();
-    private CancellationTokenSource? _scrollCancellation;
-    private Task _scrollTask = Task.CompletedTask;
-    private bool _radioDetected;
-    private bool _disposed;
+    private readonly GpioController gpioController;
+    private readonly RadioBonnetDisplay display;
+    private readonly Lock displayLock = new();
+    private readonly Lock scrollLock = new();
+    private CancellationTokenSource? scrollCancellation;
+    private Task scrollTask = Task.CompletedTask;
+    private bool radioDetected;
+    private bool disposed;
 
     public SystemRadioBonnetCheckUi()
     {
-        _gpioController = new GpioController();
-        I2cDevice? i2cDevice = null;
+        this.gpioController = new GpioController();
+        RadioBonnetDisplay? display = null;
 
         try
         {
-            _gpioController.OpenPin(DisplayResetPin, PinMode.Output);
-            _gpioController.Write(DisplayResetPin, PinValue.Low);
-            Thread.Sleep(10);
-            _gpioController.Write(DisplayResetPin, PinValue.High);
-            Thread.Sleep(10);
+            this.gpioController.OpenPin(ButtonAPin, PinMode.InputPullUp);
+            this.gpioController.OpenPin(ButtonBPin, PinMode.InputPullUp);
+            this.gpioController.OpenPin(ButtonCPin, PinMode.InputPullUp);
 
-            _gpioController.OpenPin(ButtonAPin, PinMode.InputPullUp);
-            _gpioController.OpenPin(ButtonBPin, PinMode.InputPullUp);
-            _gpioController.OpenPin(ButtonCPin, PinMode.InputPullUp);
-
-            i2cDevice = I2cDevice.Create(new I2cConnectionSettings(I2cBusId, DisplayAddress));
-            _display = i2cDevice;
-            InitializeDisplay();
+            display = new RadioBonnetDisplay();
+            this.display = display;
         }
         catch
         {
-            i2cDevice?.Dispose();
-            _gpioController.Dispose();
+            display?.Dispose();
+            this.gpioController.Dispose();
             throw;
         }
     }
 
     public void ShowRadioStatus(bool detected)
     {
-        ObjectDisposedException.ThrowIf(_disposed, this);
-        _radioDetected = detected;
-        Render(RadioBonnetButtons.None);
+        ObjectDisposedException.ThrowIf(this.disposed, this);
+        this.radioDetected = detected;
+        this.Render(RadioBonnetButtons.None);
     }
 
     public RadioBonnetButtons ReadButtons()
     {
         var buttons = RadioBonnetButtons.None;
-        if (_gpioController.Read(ButtonAPin) == PinValue.Low)
+        if (this.gpioController.Read(ButtonAPin) == PinValue.Low)
         {
             buttons |= RadioBonnetButtons.A;
         }
 
-        if (_gpioController.Read(ButtonBPin) == PinValue.Low)
+        if (this.gpioController.Read(ButtonBPin) == PinValue.Low)
         {
             buttons |= RadioBonnetButtons.B;
         }
 
-        if (_gpioController.Read(ButtonCPin) == PinValue.Low)
+        if (this.gpioController.Read(ButtonCPin) == PinValue.Low)
         {
             buttons |= RadioBonnetButtons.C;
         }
@@ -106,30 +93,30 @@ internal sealed class SystemRadioBonnetCheckUi : IRadioBonnetCheckUi, IRadioBonn
         return buttons;
     }
 
-    public void ShowButtons(RadioBonnetButtons buttons) => Render(buttons);
+    public void ShowButtons(RadioBonnetButtons buttons) => this.Render(buttons);
 
     public void ShowBroadcastMessage(string message)
     {
         ArgumentNullException.ThrowIfNull(message);
         var lines = RadioBonnetTextLayout.Wrap(message);
 
-        lock (_scrollLock)
+        lock (this.scrollLock)
         {
-            ObjectDisposedException.ThrowIf(_disposed, this);
-            if (_scrollTask.IsFaulted)
+            ObjectDisposedException.ThrowIf(this.disposed, this);
+            if (this.scrollTask.IsFaulted)
             {
-                _scrollTask.GetAwaiter().GetResult();
+                this.scrollTask.GetAwaiter().GetResult();
             }
 
-            var previousTask = _scrollTask;
-            var previousCancellation = _scrollCancellation;
+            var previousTask = this.scrollTask;
+            var previousCancellation = this.scrollCancellation;
             previousCancellation?.Cancel();
-            _scrollCancellation = new CancellationTokenSource();
-            _scrollTask = ScrollBroadcastAsync(
+            this.scrollCancellation = new CancellationTokenSource();
+            this.scrollTask = this.ScrollBroadcastAsync(
                 previousTask,
                 previousCancellation,
                 lines,
-                _scrollCancellation.Token);
+                this.scrollCancellation.Token);
         }
     }
 
@@ -137,17 +124,17 @@ internal sealed class SystemRadioBonnetCheckUi : IRadioBonnetCheckUi, IRadioBonn
     {
         Task scrollTask;
         CancellationTokenSource? scrollCancellation;
-        lock (_scrollLock)
+        lock (this.scrollLock)
         {
-            if (_disposed)
+            if (this.disposed)
             {
                 return;
             }
 
-            _disposed = true;
-            scrollCancellation = _scrollCancellation;
+            this.disposed = true;
+            scrollCancellation = this.scrollCancellation;
             scrollCancellation?.Cancel();
-            scrollTask = _scrollTask;
+            scrollTask = this.scrollTask;
         }
 
         Exception? scrollException = null;
@@ -169,15 +156,14 @@ internal sealed class SystemRadioBonnetCheckUi : IRadioBonnetCheckUi, IRadioBonn
 
         try
         {
-            lock (_displayLock)
+            lock (this.displayLock)
             {
-                WriteCommands(0xAE);
+                this.display.Dispose();
             }
         }
         finally
         {
-            _display.Dispose();
-            _gpioController.Dispose();
+            this.gpioController.Dispose();
         }
 
         if (scrollException is not null)
@@ -188,27 +174,13 @@ internal sealed class SystemRadioBonnetCheckUi : IRadioBonnetCheckUi, IRadioBonn
 
     private void Render(RadioBonnetButtons buttons)
     {
-        lock (_displayLock)
+        lock (this.displayLock)
         {
-            Array.Clear(_frameBuffer);
-            DrawText(0, 0, _radioDetected ? "RFM9x: Detected" : "RFM9x: ERROR");
-
-            if ((buttons & RadioBonnetButtons.A) != 0)
-            {
-                DrawText(0, 24, "Ada");
-            }
-
-            if ((buttons & RadioBonnetButtons.B) != 0)
-            {
-                DrawText(42, 24, "Fruit");
-            }
-
-            if ((buttons & RadioBonnetButtons.C) != 0)
-            {
-                DrawText(84, 24, "Radio");
-            }
-
-            FlushFrameBuffer();
+            var buttonA = (buttons & RadioBonnetButtons.A) != 0 ? "Ada    " : "       ";
+            var buttonB = (buttons & RadioBonnetButtons.B) != 0 ? "Fruit  " : "       ";
+            var buttonC = (buttons & RadioBonnetButtons.C) != 0 ? "Radio" : "";
+            this.display.ShowLines([this.radioDetected ? "RFM9x: Detected" : "RFM9x: ERROR",
+                "", "", buttonA + buttonB + buttonC]);
         }
     }
 
@@ -236,7 +208,7 @@ internal sealed class SystemRadioBonnetCheckUi : IRadioBonnetCheckUi, IRadioBonn
             for (var lineOffset = 0; lineOffset <= lastOffset; lineOffset++)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                RenderBroadcast(lines, lineOffset);
+                this.RenderBroadcast(lines, lineOffset);
                 if (lineOffset < lastOffset)
                 {
                     await Task.Delay(ScrollInterval, cancellationToken).ConfigureAwait(false);
@@ -250,87 +222,18 @@ internal sealed class SystemRadioBonnetCheckUi : IRadioBonnetCheckUi, IRadioBonn
 
     private void RenderBroadcast(IReadOnlyList<string> lines, int lineOffset)
     {
-        lock (_displayLock)
+        lock (this.displayLock)
         {
-            Array.Clear(_frameBuffer);
             var visibleLineCount = Math.Min(
                 RadioBonnetTextLayout.VisibleLines,
                 lines.Count - lineOffset);
+            var visible = new string[visibleLineCount];
             for (var line = 0; line < visibleLineCount; line++)
             {
-                DrawText(0, line * 8, lines[lineOffset + line]);
+                visible[line] = lines[lineOffset + line];
             }
 
-            FlushFrameBuffer();
+            this.display.ShowLines(visible);
         }
-    }
-
-    private void DrawText(int x, int y, string text)
-    {
-        var pageOffset = (y / 8) * DisplayWidth;
-        foreach (var character in text)
-        {
-            var glyph = RadioBonnetFont.Glyphs.GetValueOrDefault(character)
-                ?? RadioBonnetFont.Glyphs['?'];
-            if (x + glyph.Length > DisplayWidth)
-            {
-                break;
-            }
-
-            glyph.CopyTo(_frameBuffer, pageOffset + x);
-            x += glyph.Length + 1;
-        }
-    }
-
-    private void InitializeDisplay()
-    {
-        WriteCommands(0xAE);
-        WriteCommands(0xD5, 0x80);
-        WriteCommands(0xA8, 0x1F);
-        WriteCommands(0xD3, 0x00);
-        WriteCommands(0x40);
-        WriteCommands(0x8D, 0x14);
-        WriteCommands(0x20, 0x00);
-        WriteCommands(0xA1);
-        WriteCommands(0xC8);
-        WriteCommands(0xDA, 0x02);
-        WriteCommands(0x81, 0x8F);
-        WriteCommands(0xD9, 0xF1);
-        WriteCommands(0xDB, 0x40);
-        WriteCommands(0xA4);
-        WriteCommands(0xA6);
-        WriteCommands(0xAF);
-        lock (_displayLock)
-        {
-            Array.Clear(_frameBuffer);
-            FlushFrameBuffer();
-        }
-    }
-
-    private void FlushFrameBuffer()
-    {
-        WriteCommands(0x21, 0x00, 0x7F);
-        WriteCommands(0x22, 0x00, 0x03);
-
-        for (var offset = 0; offset < _frameBuffer.Length; offset += 16)
-        {
-            WriteData(_frameBuffer.AsSpan(offset, Math.Min(16, _frameBuffer.Length - offset)));
-        }
-    }
-
-    private void WriteCommands(params byte[] commands)
-    {
-        var buffer = new byte[commands.Length + 1];
-        buffer[0] = 0x00;
-        commands.CopyTo(buffer, 1);
-        _display.Write(buffer);
-    }
-
-    private void WriteData(ReadOnlySpan<byte> data)
-    {
-        Span<byte> buffer = stackalloc byte[data.Length + 1];
-        buffer[0] = 0x40;
-        data.CopyTo(buffer[1..]);
-        _display.Write(buffer);
     }
 }

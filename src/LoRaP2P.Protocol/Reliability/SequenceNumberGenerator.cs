@@ -24,26 +24,26 @@ public sealed class SystemP2pRandom : IP2pRandom
 
 public sealed class SequenceNumberGenerator
 {
-    private readonly Lock _lock = new();
-    private uint _next;
+    private readonly Lock syncLock = new();
+    private uint next;
 
     public SequenceNumberGenerator(IP2pRandom random)
     {
         ArgumentNullException.ThrowIfNull(random);
-        _next = random.NextUInt32();
+        this.next = random.NextUInt32();
     }
 
     public SequenceNumberGenerator(uint initialValue)
     {
-        _next = initialValue;
+        this.next = initialValue;
     }
 
     public uint Next()
     {
-        lock (_lock)
+        lock (this.syncLock)
         {
-            var value = _next;
-            _next = unchecked(_next + 1);
+            var value = this.next;
+            this.next = unchecked(this.next + 1);
             return value;
         }
     }

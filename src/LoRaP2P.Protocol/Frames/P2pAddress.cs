@@ -13,7 +13,7 @@ public readonly record struct P2pAddress
             throw new ArgumentOutOfRangeException(nameof(value), value, "An address cannot be zero.");
         }
 
-        Value = value;
+        this.Value = value;
     }
 
     public P2pAddress(P2pNodeId nodeId)
@@ -25,13 +25,13 @@ public readonly record struct P2pAddress
 
     public ushort Value { get; }
 
-    public bool IsBroadcast => Value == BroadcastValue;
+    public bool IsBroadcast => this.Value == BroadcastValue;
 
     public P2pNodeId AsNodeId() =>
-        IsBroadcast
+        this.IsBroadcast
             ? throw new InvalidOperationException("The broadcast address is not a node ID.")
-            : new P2pNodeId(Value);
+            : new P2pNodeId(this.Value);
 
     public override string ToString() =>
-        IsBroadcast ? "broadcast" : Value.ToString(CultureInfo.InvariantCulture);
+        this.IsBroadcast ? "broadcast" : this.Value.ToString(CultureInfo.InvariantCulture);
 }

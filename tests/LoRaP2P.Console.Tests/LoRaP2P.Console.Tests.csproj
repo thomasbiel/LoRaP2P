@@ -5,9 +5,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
-    <PackageReference Include="NUnit" Version="4.4.0" />
-    <PackageReference Include="NUnit3TestAdapter" Version="5.0.0">
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="NUnit" />
+    <PackageReference Include="NUnit3TestAdapter">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
@@ -16,5 +16,6 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\LoRaP2P.Console\LoRaP2P.Console.csproj" />
     <ProjectReference Include="..\..\src\LoRaP2P.Protocol\LoRaP2P.Protocol.csproj" />
+    <ProjectReference Include="..\..\src\LoRaP2P.SpeechDisplay\LoRaP2P.SpeechDisplay.csproj" />
   </ItemGroup>
 </Project>

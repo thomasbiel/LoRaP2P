@@ -4,31 +4,31 @@ namespace LoRaP2P.Protocol.Reliability;
 
 public sealed class DuplicateTracker
 {
-    private readonly Lock _lock = new();
-    private readonly TimeSpan _window;
-    private readonly int _entriesPerPeer;
-    private readonly Dictionary<P2pNodeId, Queue<Entry>> _entries = [];
+    private readonly Lock syncLock = new();
+    private readonly TimeSpan window;
+    private readonly int entriesPerPeer;
+    private readonly Dictionary<P2pNodeId, Queue<Entry>> entries = [];
 
     public DuplicateTracker(TimeSpan window, int entriesPerPeer)
     {
         ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(window, TimeSpan.Zero);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(entriesPerPeer);
 
-        _window = window;
-        _entriesPerPeer = entriesPerPeer;
+        this.window = window;
+        this.entriesPerPeer = entriesPerPeer;
     }
 
     public bool IsDuplicateAndTrack(P2pNodeId sender, uint sequenceNumber, DateTimeOffset receivedAt)
     {
-        lock (_lock)
+        lock (this.syncLock)
         {
-            if (!_entries.TryGetValue(sender, out var peerEntries))
+            if (!this.entries.TryGetValue(sender, out var peerEntries))
             {
                 peerEntries = new Queue<Entry>();
-                _entries.Add(sender, peerEntries);
+                this.entries.Add(sender, peerEntries);
             }
 
-            var oldestAllowed = receivedAt - _window;
+            var oldestAllowed = receivedAt - this.window;
             while (peerEntries.TryPeek(out var oldest) && oldest.ReceivedAt < oldestAllowed)
             {
                 peerEntries.Dequeue();
@@ -39,7 +39,7 @@ public sealed class DuplicateTracker
                 return true;
             }
 
-            while (peerEntries.Count >= _entriesPerPeer)
+            while (peerEntries.Count >= this.entriesPerPeer)
             {
                 peerEntries.Dequeue();
             }

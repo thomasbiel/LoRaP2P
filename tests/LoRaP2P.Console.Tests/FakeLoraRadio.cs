@@ -5,7 +5,7 @@ namespace LoRaP2P.Console.Tests;
 
 internal sealed class FakeLoraRadio : ILoraRadio
 {
-    private readonly Queue<(ReceivedPacket Packet, Action? After)> _receivedPackets = [];
+    private readonly Queue<(ReceivedPacket Packet, Action? After)> receivedPackets = [];
 
     public RadioConfiguration Configuration { get; private set; } = new();
 
@@ -27,27 +27,27 @@ internal sealed class FakeLoraRadio : ILoraRadio
 
     public Task ResetAsync(CancellationToken cancellationToken = default)
     {
-        ResetCount++;
+        this.ResetCount++;
         return Task.CompletedTask;
     }
 
     public Task<byte> ProbeAsync(CancellationToken cancellationToken = default)
     {
-        ProbeCount++;
+        this.ProbeCount++;
         return Task.FromResult((byte)0x12);
     }
 
     public Task ConfigureAsync(RadioConfiguration configuration, CancellationToken cancellationToken = default)
     {
-        Configuration = configuration;
+        this.Configuration = configuration;
         return Task.CompletedTask;
     }
 
     public Task<TransmitResult> TransmitAsync(ReadOnlyMemory<byte> payload, CancellationToken cancellationToken = default)
     {
-        TransmittedPayload = payload.ToArray();
-        TransmittedPayloads.Add(TransmittedPayload);
-        if (AutoAcknowledgeP2p)
+        this.TransmittedPayload = payload.ToArray();
+        this.TransmittedPayloads.Add(this.TransmittedPayload);
+        if (this.AutoAcknowledgeP2p)
         {
             var frame = P2pFrameCodec.Decode(payload.Span);
             if (frame.Type == P2pMessageType.Data && !frame.Recipient.IsBroadcast)
@@ -56,7 +56,7 @@ internal sealed class FakeLoraRadio : ILoraRadio
                     frame.Recipient.AsNodeId(),
                     frame.Sender,
                     frame.SequenceNumber);
-                QueueReceivedPacket(
+                this.QueueReceivedPacket(
                     new ReceivedPacket(P2pFrameCodec.Encode(ack), true, -60, 5));
             }
         }
@@ -66,8 +66,8 @@ internal sealed class FakeLoraRadio : ILoraRadio
 
     public Task<ReceivedPacket?> ReceiveSingleAsync(TimeSpan timeout, CancellationToken cancellationToken = default)
     {
-        ReceiveTimeout = timeout;
-        if (_receivedPackets.TryDequeue(out var reception))
+        this.ReceiveTimeout = timeout;
+        if (this.receivedPackets.TryDequeue(out var reception))
         {
             reception.After?.Invoke();
             return Task.FromResult<ReceivedPacket?>(reception.Packet);
@@ -77,12 +77,12 @@ internal sealed class FakeLoraRadio : ILoraRadio
     }
 
     public void QueueReceivedPacket(ReceivedPacket packet, Action? after = null) =>
-        _receivedPackets.Enqueue((packet, after));
+        this.receivedPackets.Enqueue((packet, after));
 
     public Task<RadioStatus> GetStatusAsync(CancellationToken cancellationToken = default)
     {
-        StatusCount++;
-        return Task.FromResult(new RadioStatus(0x12, RadioMode.Standby, 0, Configuration));
+        this.StatusCount++;
+        return Task.FromResult(new RadioStatus(0x12, RadioMode.Standby, 0, this.Configuration));
     }
 
     public Task<IReadOnlyDictionary<byte, byte>> ReadRegistersAsync(
@@ -90,7 +90,7 @@ internal sealed class FakeLoraRadio : ILoraRadio
         int count,
         CancellationToken cancellationToken = default)
     {
-        RegisterRead = (startAddress, count);
+        this.RegisterRead = (startAddress, count);
         return Task.FromResult<IReadOnlyDictionary<byte, byte>>(new Dictionary<byte, byte> { [startAddress] = 0x12 });
     }
 

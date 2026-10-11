@@ -1,6 +1,6 @@
-namespace LoRaP2P.Console;
+namespace LoRaP2P.Display.RadioBonnet;
 
-internal static class RadioBonnetTextLayout
+public static class RadioBonnetTextLayout
 {
     public const int CharactersPerLine = 21;
     public const int VisibleLines = 4;

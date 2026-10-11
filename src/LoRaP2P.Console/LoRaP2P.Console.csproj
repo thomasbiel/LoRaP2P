@@ -4,6 +4,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\LoRaP2P.Display.RadioBonnet\LoRaP2P.Display.RadioBonnet.csproj" />
     <ProjectReference Include="..\LoRaP2P.Protocol\LoRaP2P.Protocol.csproj" />
     <ProjectReference Include="..\LoRaP2P.Radio.Rfm9x\LoRaP2P.Radio.Rfm9x.csproj" />
   </ItemGroup>
@@ -21,6 +22,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="CommandLineParser" Version="2.9.1" />
+    <PackageReference Include="CommandLineParser" />
   </ItemGroup>
 </Project>

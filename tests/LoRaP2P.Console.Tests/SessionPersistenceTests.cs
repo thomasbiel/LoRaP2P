@@ -6,12 +6,12 @@ namespace LoRaP2P.Console.Tests;
 [TestFixture]
 internal sealed class SessionPersistenceTests
 {
-    private string _directory = null!;
+    private string directory = null!;
 
     [SetUp]
     public void SetUp()
     {
-        _directory = Path.Combine(
+        this.directory = Path.Combine(
             TestContext.CurrentContext.WorkDirectory,
             $"{Guid.NewGuid():N}-sessions");
     }
@@ -19,16 +19,16 @@ internal sealed class SessionPersistenceTests
     [TearDown]
     public void TearDown()
     {
-        if (Directory.Exists(_directory))
+        if (Directory.Exists(this.directory))
         {
-            Directory.Delete(_directory, recursive: true);
+            Directory.Delete(this.directory, recursive: true);
         }
     }
 
     [Test]
     public void SessionLog_AppendsSentAndReceivedMessagesToPeerFile()
     {
-        using (var log = new P2pSessionLog(_directory))
+        using (var log = new P2pSessionLog(this.directory))
         {
             log.AppendSent(
                 new P2pNodeId(1),
@@ -51,7 +51,7 @@ internal sealed class SessionPersistenceTests
                     IsDuplicate: false));
         }
 
-        var lines = File.ReadAllLines(Directory.GetFiles(_directory, "*.jsonl").Single());
+        var lines = File.ReadAllLines(Directory.GetFiles(this.directory, "*.jsonl").Single());
         Assert.Multiple(() =>
         {
             Assert.That(lines, Has.Length.EqualTo(2));
@@ -66,7 +66,7 @@ internal sealed class SessionPersistenceTests
     public async Task ChatExporter_EncodesMessageTextAndCreatesSelfContainedHtml()
     {
         string sessionPath;
-        using (var log = new P2pSessionLog(_directory))
+        using (var log = new P2pSessionLog(this.directory))
         {
             log.AppendSent(
                 new P2pNodeId(1),
@@ -76,7 +76,7 @@ internal sealed class SessionPersistenceTests
                 "text",
                 "failed",
                 attempts: 4);
-            sessionPath = Directory.GetFiles(_directory, "*.jsonl").Single();
+            sessionPath = Directory.GetFiles(this.directory, "*.jsonl").Single();
         }
 
         var htmlPath = await P2pChatExporter.ExportAsync(
@@ -99,8 +99,8 @@ internal sealed class SessionPersistenceTests
     [Test]
     public void ChatExporter_RejectsMalformedJsonLine()
     {
-        Directory.CreateDirectory(_directory);
-        var sessionPath = Path.Combine(_directory, "invalid.jsonl");
+        Directory.CreateDirectory(this.directory);
+        var sessionPath = Path.Combine(this.directory, "invalid.jsonl");
         File.WriteAllText(sessionPath, "{}");
 
         Assert.That(

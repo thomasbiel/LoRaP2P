@@ -25,11 +25,11 @@ internal sealed class ConsoleCommandParser : IDisposable
         typeof(StatusVerb)
     ];
 
-    private readonly Parser _parser;
+    private readonly Parser parser;
 
     public ConsoleCommandParser(TextWriter error)
     {
-        this._parser = new Parser(settings =>
+        this.parser = new Parser(settings =>
         {
             settings.AutoHelp = true;
             settings.CaseSensitive = false;
@@ -45,11 +45,11 @@ internal sealed class ConsoleCommandParser : IDisposable
         CancellationToken cancellationToken)
     {
         var arguments = CommandLineTokenizer.Tokenize(commandLine);
-        var result = this._parser.ParseArguments(arguments, VerbTypes);
+        var result = this.parser.ParseArguments(arguments, VerbTypes);
         return await result.MapResult<IConsoleVerb, Task<CommandOutcome>>(
             verb => verb.ExecuteAsync(context, cancellationToken),
             _ => Task.FromResult(CommandOutcome.Continue));
     }
 
-    public void Dispose() => this._parser.Dispose();
+    public void Dispose() => this.parser.Dispose();
 }
